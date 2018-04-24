@@ -19,17 +19,12 @@ type JsonnetFile struct {
 }
 
 type Source struct {
-	GitSource    *GitSource    `json:"git"`
-	GitHubSource *GitHubSource `json:"github"`
+	GitSource *GitSource `json:"git"`
 }
 
 type GitSource struct {
 	Remote string `json:"remote"`
 	Subdir string `json:"subdir"`
-}
-
-type GitHubSource struct {
-	Repo string `json:"repo"`
 }
 
 type Dependency struct {

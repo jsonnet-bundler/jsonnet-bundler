@@ -132,7 +132,8 @@ func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []st
 						name = repo
 					}
 				}
-				m.Dependencies = append(m.Dependencies, spec.Dependency{
+
+				newDep := spec.Dependency{
 					Name: name,
 					Source: spec.Source{
 						GitSource: &spec.GitSource{
@@ -141,26 +142,25 @@ func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []st
 						},
 					},
 					Version: version,
-				})
-			} else {
-				m.Dependencies = append(m.Dependencies, spec.Dependency{
-					Name: args[0],
-					Source: spec.Source{
-						GitSource: &spec.GitSource{
-							Remote: args[1],
-							Subdir: args[2],
-						},
-					},
-				})
-			}
-		}
+				}
+				oldDeps := m.Dependencies
+				newDeps := []spec.Dependency{}
+				oldDepReplaced := false
+				for _, d := range oldDeps {
+					if d.Name == newDep.Name {
+						newDeps = append(newDeps, newDep)
+						oldDepReplaced = true
+					} else {
+						newDeps = append(newDeps, d)
+					}
+				}
 
-		{
-			b, err := json.MarshalIndent(m, "", "    ")
-			if err != nil {
-				return errors.Wrap(err, "failed to encode jsonnet file")
+				if !oldDepReplaced {
+					newDeps = append(newDeps, newDep)
+				}
+
+				m.Dependencies = newDeps
 			}
-			fmt.Println(string(b))
 		}
 
 		srcPath := filepath.Join(cfg.JsonnetHome)
@@ -180,7 +180,7 @@ func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []st
 			if err != nil {
 				return errors.Wrap(err, "failed to create tmp dir")
 			}
-			//defer os.RemoveAll(tmpDir)
+			defer os.RemoveAll(tmpDir)
 
 			subdir := ""
 			var p pkg.Interface
@@ -211,13 +211,13 @@ func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []st
 				return errors.Wrap(err, "failed to create parent path")
 			}
 
-			// The path is encoded in the dir, so no need to do anything if it
-			// already exists.
-			if _, err := os.Stat(destPath); os.IsNotExist(err) {
-				err := os.Rename(path.Join(tmpDir, subdir), destPath)
-				if err != nil {
-					return errors.Wrap(err, "failed to move package")
-				}
+			err = os.RemoveAll(destPath)
+			if err != nil {
+				return errors.Wrap(err, "failed to clean previous destination path")
+			}
+			err = os.Rename(path.Join(tmpDir, subdir), destPath)
+			if err != nil {
+				return errors.Wrap(err, "failed to move package")
 			}
 		}
 

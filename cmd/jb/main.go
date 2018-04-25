@@ -45,10 +45,10 @@ var (
 		initSubcommand,
 		installSubcommand,
 	}
-	githubSlugRegex                   = regexp.MustCompile("github.com/(.*)/(.*)")
-	githubSlugWithVersionRegex        = regexp.MustCompile("github.com/(.*)/(.*)@(.*)")
-	githubSlugWithPathRegex           = regexp.MustCompile("github.com/(.*)/(.*)/(.*)")
-	githubSlugWithPathAndVersionRegex = regexp.MustCompile("github.com/(.*)/(.*)/(.*)@(.*)")
+	githubSlugRegex                   = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)")
+	githubSlugWithVersionRegex        = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)@(.*)")
+	githubSlugWithPathRegex           = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)/(.*)")
+	githubSlugWithPathAndVersionRegex = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)/(.*)@(.*)")
 )
 
 type config struct {

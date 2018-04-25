@@ -38,8 +38,6 @@ const (
 	initSubcommand    = "init"
 	basePath          = ".jsonnetpkg"
 	srcDirName        = "src"
-	jsonnetFile       = "jsonnetfile.json"
-	jsonnetLockFile   = "jsonnetfile.lock.json"
 )
 
 var (
@@ -82,9 +80,9 @@ func Main() int {
 func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []string) error {
 	switch subcommand {
 	case initSubcommand:
-		return ioutil.WriteFile(jsonnetFile, []byte("{}"), 0644)
+		return ioutil.WriteFile(pkg.JsonnetFile, []byte("{}"), 0644)
 	case installSubcommand:
-		m, err := loadJsonnetfile(jsonnetFile)
+		m, err := pkg.LoadJsonnetfile(pkg.JsonnetFile)
 		if err != nil {
 			return errors.Wrap(err, "failed to load jsonnetfile")
 		}
@@ -169,56 +167,9 @@ func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []st
 			return errors.Wrap(err, "failed to create jsonnet home path")
 		}
 
-		lock := &spec.JsonnetFile{}
-		for _, dep := range m.Dependencies {
-			tmp := filepath.Join(cfg.JsonnetHome, ".tmp")
-			err = os.MkdirAll(tmp, os.ModePerm)
-			if err != nil {
-				return errors.Wrap(err, "failed to create general tmp dir")
-			}
-			tmpDir, err := ioutil.TempDir(tmp, fmt.Sprintf("jsonnetpkg-%s-%s", dep.Name, dep.Version))
-			if err != nil {
-				return errors.Wrap(err, "failed to create tmp dir")
-			}
-			defer os.RemoveAll(tmpDir)
-
-			subdir := ""
-			var p pkg.Interface
-			if dep.Source.GitSource != nil {
-				p = pkg.NewGitPackage(dep.Source.GitSource)
-				subdir = dep.Source.GitSource.Subdir
-			}
-			lockVersion, err := p.Install(ctx, tmpDir, dep.Version)
-			if err != nil {
-				return errors.Wrap(err, "failed to install package")
-			}
-
-			lockPackage := spec.Dependency{
-				Name:    dep.Name,
-				Source:  dep.Source,
-				Version: lockVersion,
-			}
-			lock.Dependencies = append(lock.Dependencies, lockPackage)
-
-			destPath := path.Join(cfg.JsonnetHome, dep.Name)
-			if err != nil {
-				return errors.Wrap(err, "failed to find destination path for package")
-			}
-
-			fmt.Println("Moving", tmpDir, "to", destPath)
-			err = os.MkdirAll(path.Dir(destPath), os.ModePerm)
-			if err != nil {
-				return errors.Wrap(err, "failed to create parent path")
-			}
-
-			err = os.RemoveAll(destPath)
-			if err != nil {
-				return errors.Wrap(err, "failed to clean previous destination path")
-			}
-			err = os.Rename(path.Join(tmpDir, subdir), destPath)
-			if err != nil {
-				return errors.Wrap(err, "failed to move package")
-			}
+		lock, err := pkg.Install(ctx, m, cfg.JsonnetHome)
+		if err != nil {
+			return errors.Wrap(err, "failed to install")
 		}
 
 		b, err := json.MarshalIndent(m, "", "    ")
@@ -226,7 +177,7 @@ func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []st
 			return errors.Wrap(err, "failed to encode jsonnet file")
 		}
 
-		err = ioutil.WriteFile(jsonnetFile, b, 0644)
+		err = ioutil.WriteFile(pkg.JsonnetFile, b, 0644)
 		if err != nil {
 			return errors.Wrap(err, "failed to write jsonnet file")
 		}
@@ -236,7 +187,7 @@ func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []st
 			return errors.Wrap(err, "failed to encode jsonnet file")
 		}
 
-		err = ioutil.WriteFile(jsonnetLockFile, b, 0644)
+		err = ioutil.WriteFile(pkg.JsonnetLockFile, b, 0644)
 		if err != nil {
 			return errors.Wrap(err, "failed to write lock file")
 		}
@@ -245,34 +196,6 @@ func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []st
 	}
 
 	return nil
-}
-
-func libPathFromPackage(homeDir string, p spec.Dependency) string {
-	return path.Join(homeDir, p.Name)
-}
-
-func flattenGitRemote(gitRemote string) string {
-	// In order for a git remote to be represented in a directory name, "/"
-	// must be replaced. Replacing ":" may be problematic when using git server
-	// with port.
-	return strings.Replace(strings.Replace(gitRemote, "/", "-", -1), ":", "-", -1)
-}
-
-func loadJsonnetfile(filename string) (spec.JsonnetFile, error) {
-	m := spec.JsonnetFile{}
-
-	f, err := os.Open(filename)
-	if err != nil {
-		return m, err
-	}
-	defer f.Close()
-
-	err = json.NewDecoder(f).Decode(&m)
-	if err != nil {
-		return m, err
-	}
-
-	return m, nil
 }
 
 func main() {

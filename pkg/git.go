@@ -19,6 +19,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
@@ -34,12 +35,12 @@ func NewGitPackage(source *spec.GitSource) Interface {
 	}
 }
 
-func (p *GitPackage) Install(ctx context.Context, dir, version string) (string, error) {
+func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVersion string, err error) {
 	cmd := exec.CommandContext(ctx, "git", "clone", p.Source.Remote, dir)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		return "", err
 	}
@@ -64,5 +65,11 @@ func (p *GitPackage) Install(ctx context.Context, dir, version string) (string, 
 	}
 
 	commitHash := strings.TrimSpace(b.String())
+
+	err = os.RemoveAll(path.Join(dir, ".git"))
+	if err != nil {
+		return "", err
+	}
+
 	return commitHash, nil
 }

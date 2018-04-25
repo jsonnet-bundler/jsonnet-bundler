@@ -14,7 +14,9 @@
 
 package pkg
 
-import "context"
+import (
+	"context"
+)
 
 type Interface interface {
 	Install(ctx context.Context, dir, version string) (lockVersion string, err error)

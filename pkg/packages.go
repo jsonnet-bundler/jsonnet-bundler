@@ -111,6 +111,10 @@ func Install(ctx context.Context, m spec.JsonnetFile, dir string) (lock *spec.Js
 }
 
 func insertDependency(deps []spec.Dependency, newDep spec.Dependency) ([]spec.Dependency, error) {
+	if len(deps) == 0 {
+		return []spec.Dependency{newDep}, nil
+	}
+
 	res := []spec.Dependency{}
 	for _, d := range deps {
 		if d.Name == newDep.Name {

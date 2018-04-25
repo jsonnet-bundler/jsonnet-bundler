@@ -135,7 +135,7 @@ func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []st
 					Name: name,
 					Source: spec.Source{
 						GitSource: &spec.GitSource{
-							Remote: fmt.Sprintf("git@github.com:%s/%s", user, repo),
+							Remote: fmt.Sprintf("https://github.com/%s/%s", user, repo),
 							Subdir: subdir,
 						},
 					},

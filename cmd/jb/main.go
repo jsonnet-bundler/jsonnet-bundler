@@ -106,6 +106,7 @@ func installCommand(jsonnetHome string, urls ...*url.URL) int {
 		kingpin.Fatalf("failed to load jsonnetfile: %v", err)
 		return 1
 	}
+
 	if len(urls) > 0 {
 		for _, url := range urls {
 			// install package specified in command
@@ -181,43 +182,43 @@ func installCommand(jsonnetHome string, urls ...*url.URL) int {
 				m.Dependencies = newDeps
 			}
 		}
+	}
 
-		srcPath := filepath.Join(jsonnetHome)
-		err = os.MkdirAll(srcPath, os.ModePerm)
-		if err != nil {
-			kingpin.Fatalf("failed to create jsonnet home path: %v", err)
-			return 3
-		}
+	srcPath := filepath.Join(jsonnetHome)
+	err = os.MkdirAll(srcPath, os.ModePerm)
+	if err != nil {
+		kingpin.Fatalf("failed to create jsonnet home path: %v", err)
+		return 3
+	}
 
-		lock, err := pkg.Install(context.TODO(), m, jsonnetHome)
-		if err != nil {
-			kingpin.Fatalf("failed to install: %v", err)
-			return 3
-		}
+	lock, err := pkg.Install(context.TODO(), m, jsonnetHome)
+	if err != nil {
+		kingpin.Fatalf("failed to install: %v", err)
+		return 3
+	}
 
-		b, err := json.MarshalIndent(m, "", "    ")
-		if err != nil {
-			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
-			return 3
-		}
+	b, err := json.MarshalIndent(m, "", "    ")
+	if err != nil {
+		kingpin.Fatalf("failed to encode jsonnet file: %v", err)
+		return 3
+	}
 
-		err = ioutil.WriteFile(pkg.JsonnetFile, b, 0644)
-		if err != nil {
-			kingpin.Fatalf("failed to write jsonnet file: %v", err)
-			return 3
-		}
+	err = ioutil.WriteFile(pkg.JsonnetFile, b, 0644)
+	if err != nil {
+		kingpin.Fatalf("failed to write jsonnet file: %v", err)
+		return 3
+	}
 
-		b, err = json.MarshalIndent(lock, "", "    ")
-		if err != nil {
-			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
-			return 3
-		}
+	b, err = json.MarshalIndent(lock, "", "    ")
+	if err != nil {
+		kingpin.Fatalf("failed to encode jsonnet file: %v", err)
+		return 3
+	}
 
-		err = ioutil.WriteFile(pkg.JsonnetLockFile, b, 0644)
-		if err != nil {
-			kingpin.Fatalf("failed to write lock file: %v", err)
-			return 3
-		}
+	err = ioutil.WriteFile(pkg.JsonnetLockFile, b, 0644)
+	if err != nil {
+		kingpin.Fatalf("failed to write lock file: %v", err)
+		return 3
 	}
 
 	return 0

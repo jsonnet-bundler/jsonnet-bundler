@@ -19,31 +19,31 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/pkg/errors"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const (
-	installSubcommand = "install"
-	initSubcommand    = "init"
+	installActionName = "install"
+	initActionName    = "init"
 	basePath          = ".jsonnetpkg"
 	srcDirName        = "src"
 )
 
 var (
 	availableSubcommands = []string{
-		initSubcommand,
-		installSubcommand,
+		initActionName,
+		installActionName,
 	}
 	githubSlugRegex                   = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)")
 	githubSlugWithVersionRegex        = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)@(.*)")
@@ -51,43 +51,63 @@ var (
 	githubSlugWithPathAndVersionRegex = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)/(.*)@(.*)")
 )
 
-type config struct {
-	JsonnetHome string
+func main() {
+	os.Exit(Main())
 }
 
 func Main() int {
-	cfg := config{}
+	cfg := struct {
+		JsonnetHome string
+	}{}
 
-	flagset := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	flagset.StringVar(&cfg.JsonnetHome, "jsonnetpkg-home", "vendor", "The directory used to cache packages in.")
-	flagset.Parse(os.Args[1:])
+	a := kingpin.New(filepath.Base(os.Args[0]), "A jsonnet package manager")
+	a.HelpFlag.Short('h')
 
-	subcommand := "install"
-	args := flagset.Args()
-	if len(args) >= 1 {
-		subcommand = args[0]
+	a.Flag("jsonnetpkg-home", "The directory used to cache packages in.").
+		Default("vendor").StringVar(&cfg.JsonnetHome)
+
+	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
+
+	installCmd := a.Command(installActionName, "Install all dependencies or install specific ones")
+	installCmdURLs := installCmd.Arg("packages", "URLs to package to install").URLList()
+
+	command, err := a.Parse(os.Args[1:])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, errors.Wrapf(err, "Error parsing commandline arguments"))
+		a.Usage(os.Args[1:])
+		return 2
 	}
 
-	err := RunSubcommand(context.TODO(), cfg, subcommand, args[1:])
+	switch command {
+	case initCmd.FullCommand():
+		return initCommand()
+	case installCmd.FullCommand():
+		return installCommand(cfg.JsonnetHome, *installCmdURLs...)
+	default:
+		installCommand(cfg.JsonnetHome)
+	}
+
+	return 0
+}
+
+func initCommand() int {
+	err := ioutil.WriteFile(pkg.JsonnetFile, []byte("{}"), 0644)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
+		kingpin.Fatalf("Failed to write new jsonnetfile.json: %v", err)
 		return 1
 	}
 
 	return 0
 }
 
-func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []string) error {
-	switch subcommand {
-	case initSubcommand:
-		return ioutil.WriteFile(pkg.JsonnetFile, []byte("{}"), 0644)
-	case installSubcommand:
-		m, err := pkg.LoadJsonnetfile(pkg.JsonnetFile)
-		if err != nil {
-			return errors.Wrap(err, "failed to load jsonnetfile")
-		}
-
-		if len(args) == 1 {
+func installCommand(jsonnetHome string, urls ...*url.URL) int {
+	m, err := pkg.LoadJsonnetfile(pkg.JsonnetFile)
+	if err != nil {
+		kingpin.Fatalf("failed to load jsonnetfile: %v", err)
+		return 1
+	}
+	if len(urls) > 0 {
+		for _, url := range urls {
 			// install package specified in command
 			// $ jsonnetpkg install ksonnet git@github.com:ksonnet/ksonnet-lib
 			// $ jsonnetpkg install grafonnet git@github.com:grafana/grafonnet-lib grafonnet
@@ -95,36 +115,37 @@ func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []st
 			//
 			// github.com/(slug)/(dir)
 
-			if githubSlugRegex.MatchString(args[0]) {
+			urlString := url.String()
+			if githubSlugRegex.MatchString(urlString) {
 				name := ""
 				user := ""
 				repo := ""
 				subdir := ""
 				version := "master"
-				if githubSlugWithPathRegex.MatchString(args[0]) {
-					if githubSlugWithPathAndVersionRegex.MatchString(args[0]) {
-						matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(args[0])
+				if githubSlugWithPathRegex.MatchString(urlString) {
+					if githubSlugWithPathAndVersionRegex.MatchString(urlString) {
+						matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(urlString)
 						user = matches[1]
 						repo = matches[2]
 						subdir = matches[3]
 						version = matches[4]
 						name = path.Base(subdir)
 					} else {
-						matches := githubSlugWithPathRegex.FindStringSubmatch(args[0])
+						matches := githubSlugWithPathRegex.FindStringSubmatch(urlString)
 						user = matches[1]
 						repo = matches[2]
 						subdir = matches[3]
 						name = path.Base(subdir)
 					}
 				} else {
-					if githubSlugWithVersionRegex.MatchString(args[0]) {
-						matches := githubSlugWithVersionRegex.FindStringSubmatch(args[0])
+					if githubSlugWithVersionRegex.MatchString(urlString) {
+						matches := githubSlugWithVersionRegex.FindStringSubmatch(urlString)
 						user = matches[1]
 						repo = matches[2]
 						name = repo
 						version = matches[3]
 					} else {
-						matches := githubSlugRegex.FindStringSubmatch(args[0])
+						matches := githubSlugRegex.FindStringSubmatch(urlString)
 						user = matches[1]
 						repo = matches[2]
 						name = repo
@@ -161,43 +182,43 @@ func RunSubcommand(ctx context.Context, cfg config, subcommand string, args []st
 			}
 		}
 
-		srcPath := filepath.Join(cfg.JsonnetHome)
+		srcPath := filepath.Join(jsonnetHome)
 		err = os.MkdirAll(srcPath, os.ModePerm)
 		if err != nil {
-			return errors.Wrap(err, "failed to create jsonnet home path")
+			kingpin.Fatalf("failed to create jsonnet home path: %v", err)
+			return 3
 		}
 
-		lock, err := pkg.Install(ctx, m, cfg.JsonnetHome)
+		lock, err := pkg.Install(context.TODO(), m, jsonnetHome)
 		if err != nil {
-			return errors.Wrap(err, "failed to install")
+			kingpin.Fatalf("failed to install: %v", err)
+			return 3
 		}
 
 		b, err := json.MarshalIndent(m, "", "    ")
 		if err != nil {
-			return errors.Wrap(err, "failed to encode jsonnet file")
+			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
+			return 3
 		}
 
 		err = ioutil.WriteFile(pkg.JsonnetFile, b, 0644)
 		if err != nil {
-			return errors.Wrap(err, "failed to write jsonnet file")
+			kingpin.Fatalf("failed to write jsonnet file: %v", err)
+			return 3
 		}
 
 		b, err = json.MarshalIndent(lock, "", "    ")
 		if err != nil {
-			return errors.Wrap(err, "failed to encode jsonnet file")
+			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
+			return 3
 		}
 
 		err = ioutil.WriteFile(pkg.JsonnetLockFile, b, 0644)
 		if err != nil {
-			return errors.Wrap(err, "failed to write lock file")
+			kingpin.Fatalf("failed to write lock file: %v", err)
+			return 3
 		}
-	default:
-		return fmt.Errorf("Subcommand \"%s\" not availble. Available subcommands: %s", subcommand, strings.Join(availableSubcommands, ", "))
 	}
 
-	return nil
-}
-
-func main() {
-	os.Exit(Main())
+	return 0
 }

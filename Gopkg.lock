@@ -17,6 +17,12 @@
   revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/otiai10/copy"
+  packages = ["."]
+  revision = "c59d460454b7a0c318e59595cb3ea22a41ba2572"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -31,6 +37,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4a98ea2be4c124f0dcabf8233d7d54c26546910b1e75cba346f1a9bbf8f377aa"
+  inputs-digest = "069863179b490c9f43e3caec8c24d8910c6d2dc4ef9e523a3b4fd18ffe7f20a5"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -17,13 +17,12 @@ package pkg
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/otiai10/copy"
 	"github.com/pkg/errors"
 )
 
@@ -41,12 +40,8 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create general tmp dir")
 		}
-		tmpDir, err := ioutil.TempDir(tmp, fmt.Sprintf("jsonnetpkg-%s-%s", dep.Name, dep.Version))
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create tmp dir")
-		}
-		defer os.RemoveAll(tmpDir)
 
+		tmpDir := filepath.Join(tmp, dep.Name)
 		subdir := ""
 		var p Interface
 		if dep.Source.GitSource != nil {
@@ -73,7 +68,8 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to clean previous destination path")
 		}
-		err = os.Rename(path.Join(tmpDir, subdir), destPath)
+
+		err = copy.Copy(path.Join(tmpDir, subdir), destPath)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to move package")
 		}

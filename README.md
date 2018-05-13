@@ -17,7 +17,24 @@ All command line flags:
 [embedmd]:# (_output/help.txt)
 ```txt
 $ jb -h
-Usage of jb:
-  -jsonnetpkg-home string
-    	The directory used to cache packages in. (default "vendor")
+usage: jb [<flags>] <command> [<args> ...]
+
+A jsonnet package manager
+
+Flags:
+  -h, --help  Show context-sensitive help (also try --help-long and --help-man).
+      --jsonnetpkg-home="vendor"  
+              The directory used to cache packages in.
+
+Commands:
+  help [<command>...]
+    Show help.
+
+  init
+    Initialize a new empty jsonnetfile
+
+  install [<packages>...]
+    Install all dependencies or install specific ones
+
+
 ```

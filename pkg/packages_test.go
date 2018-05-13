@@ -12,24 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spec
+package pkg
 
-type JsonnetFile struct {
-	Dependencies []Dependency `json:"dependencies"`
-}
+import (
+	"testing"
 
-type Source struct {
-	GitSource *GitSource `json:"git"`
-}
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+)
 
-type GitSource struct {
-	Remote string `json:"remote"`
-	Subdir string `json:"subdir"`
-}
+func TestInsert(t *testing.T) {
+	deps := []*spec.Dependency{&spec.Dependency{Name: "test1", Version: "latest"}}
+	dep := &spec.Dependency{Name: "test2", Version: "latest"}
 
-type Dependency struct {
-	Name      string `json:"name"`
-	Source    Source `json:"source"`
-	Version   string `json:"version"`
-	DepSource string `json:"-"`
+	res, err := insertDependency(deps, dep)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(res) != 2 {
+		t.Fatal("Incorrectly inserted")
+	}
 }

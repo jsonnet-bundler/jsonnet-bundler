@@ -33,7 +33,7 @@ var (
 	VersionMismatch = errors.New("multiple colliding versions specified")
 )
 
-func Install(ctx context.Context, m spec.JsonnetFile, dir string) (lock *spec.JsonnetFile, err error) {
+func Install(ctx context.Context, dependencySourceIdentifier string, m spec.JsonnetFile, dir string) (lock *spec.JsonnetFile, err error) {
 	lock = &spec.JsonnetFile{}
 	for _, dep := range m.Dependencies {
 		tmp := filepath.Join(dir, ".tmp")
@@ -58,11 +58,11 @@ func Install(ctx context.Context, m spec.JsonnetFile, dir string) (lock *spec.Js
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to install package")
 		}
-		// need to deduplicate/error when multiple entries
 		lock.Dependencies, err = insertDependency(lock.Dependencies, spec.Dependency{
-			Name:    dep.Name,
-			Source:  dep.Source,
-			Version: lockVersion,
+			Name:      dep.Name,
+			Source:    dep.Source,
+			Version:   lockVersion,
+			DepSource: dependencySourceIdentifier,
 		})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to insert dependency to lock dependencies")
@@ -87,22 +87,26 @@ func Install(ctx context.Context, m spec.JsonnetFile, dir string) (lock *spec.Js
 			return nil, errors.Wrap(err, "failed to move package")
 		}
 
-		if _, err := os.Stat(path.Join(destPath, JsonnetFile)); !os.IsNotExist(err) {
-			depsDeps, err := LoadJsonnetfile(path.Join(destPath, JsonnetFile))
-			if err != nil {
-				return nil, err
-			}
+		filepath, err := ChooseJsonnetFile(destPath)
+		if err != nil {
+			return nil, err
+		}
+		depsDeps, err := LoadJsonnetfile(filepath)
+		// It is ok for depedencies not to have a JsonnetFile, it just means
+		// they do not have transitive dependencies of their own.
+		if err != nil && !os.IsNotExist(err) {
+			return nil, err
+		}
 
-			depsInstalledByDependency, err := Install(ctx, depsDeps, dir)
-			if err != nil {
-				return nil, err
-			}
+		depsInstalledByDependency, err := Install(ctx, filepath, depsDeps, dir)
+		if err != nil {
+			return nil, err
+		}
 
-			for _, d := range depsInstalledByDependency.Dependencies {
-				lock.Dependencies, err = insertDependency(lock.Dependencies, d)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to insert dependency to lock dependencies")
-				}
+		for _, d := range depsInstalledByDependency.Dependencies {
+			lock.Dependencies, err = insertDependency(lock.Dependencies, d)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to insert dependency to lock dependencies")
 			}
 		}
 	}
@@ -116,24 +120,63 @@ func insertDependency(deps []spec.Dependency, newDep spec.Dependency) ([]spec.De
 	}
 
 	res := []spec.Dependency{}
+	newDepPreviouslyPresent := false
 	for _, d := range deps {
 		if d.Name == newDep.Name {
 			if d.Version != newDep.Version {
-				return nil, VersionMismatch
+				return nil, fmt.Errorf("multiple colliding versions specified for %s: %s (from %s) and %s (from %s)", d.Name, d.Version, d.DepSource, newDep.Version, newDep.DepSource)
 			}
 			res = append(res, d)
+			newDepPreviouslyPresent = true
 		} else {
 			res = append(res, d)
 		}
+	}
+	if !newDepPreviouslyPresent {
+		res = append(res, newDep)
 	}
 
 	return res, nil
 }
 
-func LoadJsonnetfile(filename string) (spec.JsonnetFile, error) {
+func LockExists(dir string) (bool, error) {
+	lockfile := path.Join(dir, JsonnetLockFile)
+	_, err := os.Stat(lockfile)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func ChooseJsonnetFile(dir string) (string, error) {
+	lockfile := path.Join(dir, JsonnetLockFile)
+	jsonnetfile := path.Join(dir, JsonnetFile)
+	filename := lockfile
+
+	lockExists, err := LockExists(dir)
+	if err != nil {
+		return "", err
+	}
+
+	if !lockExists {
+		filename = jsonnetfile
+	}
+
+	return filename, err
+}
+
+func LoadJsonnetfile(filepath string) (spec.JsonnetFile, error) {
 	m := spec.JsonnetFile{}
 
-	f, err := os.Open(filename)
+	if _, err := os.Stat(filepath); err != nil {
+		return m, err
+	}
+
+	f, err := os.Open(filepath)
 	if err != nil {
 		return m, err
 	}

@@ -180,6 +180,8 @@ func installCommand(jsonnetHome string, urls ...*url.URL) int {
 				}
 
 				m.Dependencies = newDeps
+			} else {
+				kingpin.Errorf("ignoring unrecognized url: %s", url)
 			}
 		}
 	}

@@ -45,6 +45,7 @@ var (
 		initActionName,
 		installActionName,
 	}
+	gitSSHRegex                       = regexp.MustCompile("git@([^:])([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)")
 	githubSlugRegex                   = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)")
 	githubSlugWithVersionRegex        = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)@(.*)")
 	githubSlugWithPathRegex           = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)/(.*)")
@@ -100,6 +101,59 @@ func initCommand() int {
 	return 0
 }
 
+func parseGithubDependency(urlString string) *spec.Dependency {
+	if !githubSlugRegex.MatchString(urlString) {
+		return nil
+	}
+
+	name := ""
+	user := ""
+	repo := ""
+	subdir := ""
+	version := "master"
+
+	if githubSlugWithPathRegex.MatchString(urlString) {
+		if githubSlugWithPathAndVersionRegex.MatchString(urlString) {
+			matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(urlString)
+			user = matches[1]
+			repo = matches[2]
+			subdir = matches[3]
+			version = matches[4]
+			name = path.Base(subdir)
+		} else {
+			matches := githubSlugWithPathRegex.FindStringSubmatch(urlString)
+			user = matches[1]
+			repo = matches[2]
+			subdir = matches[3]
+			name = path.Base(subdir)
+		}
+	} else {
+		if githubSlugWithVersionRegex.MatchString(urlString) {
+			matches := githubSlugWithVersionRegex.FindStringSubmatch(urlString)
+			user = matches[1]
+			repo = matches[2]
+			name = repo
+			version = matches[3]
+		} else {
+			matches := githubSlugRegex.FindStringSubmatch(urlString)
+			user = matches[1]
+			repo = matches[2]
+			name = repo
+		}
+	}
+
+	return &spec.Dependency{
+		Name: name,
+		Source: spec.Source{
+			GitSource: &spec.GitSource{
+				Remote: fmt.Sprintf("https://github.com/%s/%s", user, repo),
+				Subdir: subdir,
+			},
+		},
+		Version: version,
+	}
+}
+
 func installCommand(jsonnetHome string, urls ...*url.URL) int {
 	m, err := pkg.LoadJsonnetfile(pkg.JsonnetFile)
 	if err != nil {
@@ -117,72 +171,29 @@ func installCommand(jsonnetHome string, urls ...*url.URL) int {
 			// github.com/(slug)/(dir)
 
 			urlString := url.String()
-			if githubSlugRegex.MatchString(urlString) {
-				name := ""
-				user := ""
-				repo := ""
-				subdir := ""
-				version := "master"
-				if githubSlugWithPathRegex.MatchString(urlString) {
-					if githubSlugWithPathAndVersionRegex.MatchString(urlString) {
-						matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(urlString)
-						user = matches[1]
-						repo = matches[2]
-						subdir = matches[3]
-						version = matches[4]
-						name = path.Base(subdir)
-					} else {
-						matches := githubSlugWithPathRegex.FindStringSubmatch(urlString)
-						user = matches[1]
-						repo = matches[2]
-						subdir = matches[3]
-						name = path.Base(subdir)
-					}
-				} else {
-					if githubSlugWithVersionRegex.MatchString(urlString) {
-						matches := githubSlugWithVersionRegex.FindStringSubmatch(urlString)
-						user = matches[1]
-						repo = matches[2]
-						name = repo
-						version = matches[3]
-					} else {
-						matches := githubSlugRegex.FindStringSubmatch(urlString)
-						user = matches[1]
-						repo = matches[2]
-						name = repo
-					}
-				}
-
-				newDep := spec.Dependency{
-					Name: name,
-					Source: spec.Source{
-						GitSource: &spec.GitSource{
-							Remote: fmt.Sprintf("https://github.com/%s/%s", user, repo),
-							Subdir: subdir,
-						},
-					},
-					Version: version,
-				}
-				oldDeps := m.Dependencies
-				newDeps := []spec.Dependency{}
-				oldDepReplaced := false
-				for _, d := range oldDeps {
-					if d.Name == newDep.Name {
-						newDeps = append(newDeps, newDep)
-						oldDepReplaced = true
-					} else {
-						newDeps = append(newDeps, d)
-					}
-				}
-
-				if !oldDepReplaced {
-					newDeps = append(newDeps, newDep)
-				}
-
-				m.Dependencies = newDeps
-			} else {
+			newDep := parseGithubDependency(urlString)
+			if newDep == nil {
 				kingpin.Errorf("ignoring unrecognized url: %s", url)
+				continue
 			}
+
+			oldDeps := m.Dependencies
+			newDeps := []spec.Dependency{}
+			oldDepReplaced := false
+			for _, d := range oldDeps {
+				if d.Name == newDep.Name {
+					newDeps = append(newDeps, *newDep)
+					oldDepReplaced = true
+				} else {
+					newDeps = append(newDeps, d)
+				}
+			}
+
+			if !oldDepReplaced {
+				newDeps = append(newDeps, *newDep)
+			}
+
+			m.Dependencies = newDeps
 		}
 	}
 

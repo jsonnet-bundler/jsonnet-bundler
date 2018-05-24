@@ -45,6 +45,11 @@ var (
 		initActionName,
 		installActionName,
 	}
+	gitSSHRegex                   = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git")
+	gitSSHWithVersionRegex        = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git@(.*)")
+	gitSSHWithPathRegex           = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)")
+	gitSSHWithPathAndVersionRegex = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)@(.*)")
+
 	githubSlugRegex                   = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)")
 	githubSlugWithVersionRegex        = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)@(.*)")
 	githubSlugWithPathRegex           = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)/(.*)")
@@ -100,6 +105,120 @@ func initCommand() int {
 	return 0
 }
 
+func parseDepedency(urlString string) *spec.Dependency {
+	if spec := parseGitSSHDependency(urlString); spec != nil {
+		return spec
+	}
+
+	if spec := parseGithubDependency(urlString); spec != nil {
+		return spec
+	}
+
+	return nil
+}
+
+func parseGitSSHDependency(urlString string) *spec.Dependency {
+	if !gitSSHRegex.MatchString(urlString) {
+		return nil
+	}
+
+	subdir := ""
+	host := ""
+	org := ""
+	repo := ""
+	version := "master"
+
+	if gitSSHWithPathAndVersionRegex.MatchString(urlString) {
+		matches := gitSSHWithPathAndVersionRegex.FindStringSubmatch(urlString)
+		host = matches[1]
+		org = matches[2]
+		repo = matches[3]
+		subdir = matches[4]
+		version = matches[5]
+	} else if gitSSHWithPathRegex.MatchString(urlString) {
+		matches := gitSSHWithPathRegex.FindStringSubmatch(urlString)
+		host = matches[1]
+		org = matches[2]
+		repo = matches[3]
+		subdir = matches[4]
+	} else if gitSSHWithVersionRegex.MatchString(urlString) {
+		matches := gitSSHWithVersionRegex.FindStringSubmatch(urlString)
+		host = matches[1]
+		org = matches[2]
+		repo = matches[3]
+		version = matches[4]
+	} else {
+		matches := gitSSHRegex.FindStringSubmatch(urlString)
+		host = matches[1]
+		org = matches[2]
+		repo = matches[3]
+	}
+
+	return &spec.Dependency{
+		Name: repo,
+		Source: spec.Source{
+			GitSource: &spec.GitSource{
+				Remote: fmt.Sprintf("git@%s:%s/%s", host, org, repo),
+				Subdir: subdir,
+			},
+		},
+		Version: version,
+	}
+}
+
+func parseGithubDependency(urlString string) *spec.Dependency {
+	if !githubSlugRegex.MatchString(urlString) {
+		return nil
+	}
+
+	name := ""
+	user := ""
+	repo := ""
+	subdir := ""
+	version := "master"
+
+	if githubSlugWithPathRegex.MatchString(urlString) {
+		if githubSlugWithPathAndVersionRegex.MatchString(urlString) {
+			matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(urlString)
+			user = matches[1]
+			repo = matches[2]
+			subdir = matches[3]
+			version = matches[4]
+			name = path.Base(subdir)
+		} else {
+			matches := githubSlugWithPathRegex.FindStringSubmatch(urlString)
+			user = matches[1]
+			repo = matches[2]
+			subdir = matches[3]
+			name = path.Base(subdir)
+		}
+	} else {
+		if githubSlugWithVersionRegex.MatchString(urlString) {
+			matches := githubSlugWithVersionRegex.FindStringSubmatch(urlString)
+			user = matches[1]
+			repo = matches[2]
+			name = repo
+			version = matches[3]
+		} else {
+			matches := githubSlugRegex.FindStringSubmatch(urlString)
+			user = matches[1]
+			repo = matches[2]
+			name = repo
+		}
+	}
+
+	return &spec.Dependency{
+		Name: name,
+		Source: spec.Source{
+			GitSource: &spec.GitSource{
+				Remote: fmt.Sprintf("https://github.com/%s/%s", user, repo),
+				Subdir: subdir,
+			},
+		},
+		Version: version,
+	}
+}
+
 func installCommand(jsonnetHome string, urls ...*url.URL) int {
 	m, err := pkg.LoadJsonnetfile(pkg.JsonnetFile)
 	if err != nil {
@@ -117,70 +236,29 @@ func installCommand(jsonnetHome string, urls ...*url.URL) int {
 			// github.com/(slug)/(dir)
 
 			urlString := url.String()
-			if githubSlugRegex.MatchString(urlString) {
-				name := ""
-				user := ""
-				repo := ""
-				subdir := ""
-				version := "master"
-				if githubSlugWithPathRegex.MatchString(urlString) {
-					if githubSlugWithPathAndVersionRegex.MatchString(urlString) {
-						matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(urlString)
-						user = matches[1]
-						repo = matches[2]
-						subdir = matches[3]
-						version = matches[4]
-						name = path.Base(subdir)
-					} else {
-						matches := githubSlugWithPathRegex.FindStringSubmatch(urlString)
-						user = matches[1]
-						repo = matches[2]
-						subdir = matches[3]
-						name = path.Base(subdir)
-					}
-				} else {
-					if githubSlugWithVersionRegex.MatchString(urlString) {
-						matches := githubSlugWithVersionRegex.FindStringSubmatch(urlString)
-						user = matches[1]
-						repo = matches[2]
-						name = repo
-						version = matches[3]
-					} else {
-						matches := githubSlugRegex.FindStringSubmatch(urlString)
-						user = matches[1]
-						repo = matches[2]
-						name = repo
-					}
-				}
-
-				newDep := spec.Dependency{
-					Name: name,
-					Source: spec.Source{
-						GitSource: &spec.GitSource{
-							Remote: fmt.Sprintf("https://github.com/%s/%s", user, repo),
-							Subdir: subdir,
-						},
-					},
-					Version: version,
-				}
-				oldDeps := m.Dependencies
-				newDeps := []spec.Dependency{}
-				oldDepReplaced := false
-				for _, d := range oldDeps {
-					if d.Name == newDep.Name {
-						newDeps = append(newDeps, newDep)
-						oldDepReplaced = true
-					} else {
-						newDeps = append(newDeps, d)
-					}
-				}
-
-				if !oldDepReplaced {
-					newDeps = append(newDeps, newDep)
-				}
-
-				m.Dependencies = newDeps
+			newDep := parseDepedency(urlString)
+			if newDep == nil {
+				kingpin.Errorf("ignoring unrecognized url: %s", url)
+				continue
 			}
+
+			oldDeps := m.Dependencies
+			newDeps := []spec.Dependency{}
+			oldDepReplaced := false
+			for _, d := range oldDeps {
+				if d.Name == newDep.Name {
+					newDeps = append(newDeps, *newDep)
+					oldDepReplaced = true
+				} else {
+					newDeps = append(newDeps, d)
+				}
+			}
+
+			if !oldDepReplaced {
+				newDeps = append(newDeps, *newDep)
+			}
+
+			m.Dependencies = newDeps
 		}
 	}
 

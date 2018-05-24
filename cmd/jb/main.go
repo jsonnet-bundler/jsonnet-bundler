@@ -45,7 +45,11 @@ var (
 		initActionName,
 		installActionName,
 	}
-	gitSSHRegex                       = regexp.MustCompile("git@([^:])([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)")
+	gitSSHRegex                   = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git")
+	gitSSHWithVersionRegex        = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git@(.*)")
+	gitSSHWithPathRegex           = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)")
+	gitSSHWithPathAndVersionRegex = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)@(.*)")
+
 	githubSlugRegex                   = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)")
 	githubSlugWithVersionRegex        = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)@(.*)")
 	githubSlugWithPathRegex           = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)/(.*)")
@@ -99,6 +103,67 @@ func initCommand() int {
 	}
 
 	return 0
+}
+
+func parseDepedency(urlString string) *spec.Dependency {
+	if spec := parseGitSSHDependency(urlString); spec != nil {
+		return spec
+	}
+
+	if spec := parseGithubDependency(urlString); spec != nil {
+		return spec
+	}
+
+	return nil
+}
+
+func parseGitSSHDependency(urlString string) *spec.Dependency {
+	if !gitSSHRegex.MatchString(urlString) {
+		return nil
+	}
+
+	subdir := ""
+	host := ""
+	org := ""
+	repo := ""
+	version := "master"
+
+	if gitSSHWithPathAndVersionRegex.MatchString(urlString) {
+		matches := gitSSHWithPathAndVersionRegex.FindStringSubmatch(urlString)
+		host = matches[1]
+		org = matches[2]
+		repo = matches[3]
+		subdir = matches[4]
+		version = matches[5]
+	} else if gitSSHWithPathRegex.MatchString(urlString) {
+		matches := gitSSHWithPathRegex.FindStringSubmatch(urlString)
+		host = matches[1]
+		org = matches[2]
+		repo = matches[3]
+		subdir = matches[4]
+	} else if gitSSHWithVersionRegex.MatchString(urlString) {
+		matches := gitSSHWithVersionRegex.FindStringSubmatch(urlString)
+		host = matches[1]
+		org = matches[2]
+		repo = matches[3]
+		version = matches[4]
+	} else {
+		matches := gitSSHRegex.FindStringSubmatch(urlString)
+		host = matches[1]
+		org = matches[2]
+		repo = matches[3]
+	}
+
+	return &spec.Dependency{
+		Name: repo,
+		Source: spec.Source{
+			GitSource: &spec.GitSource{
+				Remote: fmt.Sprintf("git@%s:%s/%s", host, org, repo),
+				Subdir: subdir,
+			},
+		},
+		Version: version,
+	}
 }
 
 func parseGithubDependency(urlString string) *spec.Dependency {
@@ -171,7 +236,7 @@ func installCommand(jsonnetHome string, urls ...*url.URL) int {
 			// github.com/(slug)/(dir)
 
 			urlString := url.String()
-			newDep := parseGithubDependency(urlString)
+			newDep := parseDepedency(urlString)
 			if newDep == nil {
 				kingpin.Errorf("ignoring unrecognized url: %s", url)
 				continue

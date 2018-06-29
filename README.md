@@ -36,5 +36,8 @@ Commands:
   install [<packages>...]
     Install all dependencies or install specific ones
 
+  update
+    Update all dependencies.
+
 
 ```

@@ -35,6 +35,7 @@ import (
 
 const (
 	installActionName = "install"
+	updateActionName  = "update"
 	initActionName    = "init"
 	basePath          = ".jsonnetpkg"
 	srcDirName        = "src"
@@ -76,6 +77,8 @@ func Main() int {
 	installCmd := a.Command(installActionName, "Install all dependencies or install specific ones")
 	installCmdURLs := installCmd.Arg("packages", "URLs to package to install").URLList()
 
+	updateCmd := a.Command(updateActionName, "Update all dependencies.")
+
 	command, err := a.Parse(os.Args[1:])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, errors.Wrapf(err, "Error parsing commandline arguments"))
@@ -88,6 +91,8 @@ func Main() int {
 		return initCommand()
 	case installCmd.FullCommand():
 		return installCommand(cfg.JsonnetHome, *installCmdURLs...)
+	case updateCmd.FullCommand():
+		return updateCommand(cfg.JsonnetHome)
 	default:
 		installCommand(cfg.JsonnetHome)
 	}
@@ -220,7 +225,21 @@ func parseGithubDependency(urlString string) *spec.Dependency {
 }
 
 func installCommand(jsonnetHome string, urls ...*url.URL) int {
-	m, err := pkg.LoadJsonnetfile(pkg.JsonnetFile)
+	workdir := "."
+
+	useLock, err := pkg.LockExists(workdir)
+	if err != nil {
+		kingpin.Fatalf("failed to check if jsonnetfile.lock.json exists: %v", err)
+		return 1
+	}
+
+	jsonnetfile, err := pkg.ChooseJsonnetFile(workdir)
+	if err != nil {
+		kingpin.Fatalf("failed to choose jsonnetfile: %v", err)
+		return 1
+	}
+
+	m, err := pkg.LoadJsonnetfile(jsonnetfile)
 	if err != nil {
 		kingpin.Fatalf("failed to load jsonnetfile: %v", err)
 		return 1
@@ -269,25 +288,64 @@ func installCommand(jsonnetHome string, urls ...*url.URL) int {
 		return 3
 	}
 
-	lock, err := pkg.Install(context.TODO(), m, jsonnetHome)
+	lock, err := pkg.Install(context.TODO(), jsonnetfile, m, jsonnetHome)
 	if err != nil {
 		kingpin.Fatalf("failed to install: %v", err)
 		return 3
 	}
 
-	b, err := json.MarshalIndent(m, "", "    ")
+	// If installing from lock file there is no need to write any files back.
+	if !useLock {
+		b, err := json.MarshalIndent(m, "", "    ")
+		if err != nil {
+			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
+			return 3
+		}
+
+		err = ioutil.WriteFile(pkg.JsonnetFile, b, 0644)
+		if err != nil {
+			kingpin.Fatalf("failed to write jsonnet file: %v", err)
+			return 3
+		}
+
+		b, err = json.MarshalIndent(lock, "", "    ")
+		if err != nil {
+			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
+			return 3
+		}
+
+		err = ioutil.WriteFile(pkg.JsonnetLockFile, b, 0644)
+		if err != nil {
+			kingpin.Fatalf("failed to write lock file: %v", err)
+			return 3
+		}
+	}
+
+	return 0
+}
+
+func updateCommand(jsonnetHome string, urls ...*url.URL) int {
+	jsonnetfile := pkg.JsonnetFile
+
+	m, err := pkg.LoadJsonnetfile(jsonnetfile)
 	if err != nil {
-		kingpin.Fatalf("failed to encode jsonnet file: %v", err)
+		kingpin.Fatalf("failed to load jsonnetfile: %v", err)
+		return 1
+	}
+
+	err = os.MkdirAll(jsonnetHome, os.ModePerm)
+	if err != nil {
+		kingpin.Fatalf("failed to create jsonnet home path: %v", err)
 		return 3
 	}
 
-	err = ioutil.WriteFile(pkg.JsonnetFile, b, 0644)
+	lock, err := pkg.Install(context.TODO(), jsonnetfile, m, jsonnetHome)
 	if err != nil {
-		kingpin.Fatalf("failed to write jsonnet file: %v", err)
+		kingpin.Fatalf("failed to install: %v", err)
 		return 3
 	}
 
-	b, err = json.MarshalIndent(lock, "", "    ")
+	b, err := json.MarshalIndent(lock, "", "    ")
 	if err != nil {
 		kingpin.Fatalf("failed to encode jsonnet file: %v", err)
 		return 3

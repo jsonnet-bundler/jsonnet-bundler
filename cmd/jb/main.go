@@ -227,13 +227,7 @@ func parseGithubDependency(urlString string) *spec.Dependency {
 func installCommand(jsonnetHome string, urls ...*url.URL) int {
 	workdir := "."
 
-	useLock, err := pkg.LockExists(workdir)
-	if err != nil {
-		kingpin.Fatalf("failed to check if jsonnetfile.lock.json exists: %v", err)
-		return 1
-	}
-
-	jsonnetfile, err := pkg.ChooseJsonnetFile(workdir)
+	jsonnetfile, isLock, err := pkg.ChooseJsonnetFile(workdir)
 	if err != nil {
 		kingpin.Fatalf("failed to choose jsonnetfile: %v", err)
 		return 1
@@ -288,14 +282,14 @@ func installCommand(jsonnetHome string, urls ...*url.URL) int {
 		return 3
 	}
 
-	lock, err := pkg.Install(context.TODO(), jsonnetfile, m, jsonnetHome)
+	lock, err := pkg.Install(context.TODO(), isLock, jsonnetfile, m, jsonnetHome)
 	if err != nil {
 		kingpin.Fatalf("failed to install: %v", err)
 		return 3
 	}
 
 	// If installing from lock file there is no need to write any files back.
-	if !useLock {
+	if !isLock {
 		b, err := json.MarshalIndent(m, "", "    ")
 		if err != nil {
 			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
@@ -339,7 +333,9 @@ func updateCommand(jsonnetHome string, urls ...*url.URL) int {
 		return 3
 	}
 
-	lock, err := pkg.Install(context.TODO(), jsonnetfile, m, jsonnetHome)
+	// When updating, the lockfile is explicitly ignored.
+	isLock := false
+	lock, err := pkg.Install(context.TODO(), isLock, jsonnetfile, m, jsonnetHome)
 	if err != nil {
 		kingpin.Fatalf("failed to install: %v", err)
 		return 3

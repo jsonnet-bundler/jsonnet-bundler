@@ -33,7 +33,7 @@ var (
 	VersionMismatch = errors.New("multiple colliding versions specified")
 )
 
-func Install(ctx context.Context, dependencySourceIdentifier string, m spec.JsonnetFile, dir string) (lock *spec.JsonnetFile, err error) {
+func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string, m spec.JsonnetFile, dir string) (lock *spec.JsonnetFile, err error) {
 	lock = &spec.JsonnetFile{}
 	for _, dep := range m.Dependencies {
 		tmp := filepath.Join(dir, ".tmp")
@@ -58,6 +58,14 @@ func Install(ctx context.Context, dependencySourceIdentifier string, m spec.Json
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to install package")
 		}
+
+		// If dependencies are being installed from a lock file, the transitive
+		// dependencies are not questioned, but the locked dependencies are
+		// just installed.
+		if isLock {
+			continue
+		}
+
 		lock.Dependencies, err = insertDependency(lock.Dependencies, spec.Dependency{
 			Name:      dep.Name,
 			Source:    dep.Source,
@@ -87,7 +95,7 @@ func Install(ctx context.Context, dependencySourceIdentifier string, m spec.Json
 			return nil, errors.Wrap(err, "failed to move package")
 		}
 
-		filepath, err := ChooseJsonnetFile(destPath)
+		filepath, isLock, err := ChooseJsonnetFile(destPath)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +106,7 @@ func Install(ctx context.Context, dependencySourceIdentifier string, m spec.Json
 			return nil, err
 		}
 
-		depsInstalledByDependency, err := Install(ctx, filepath, depsDeps, dir)
+		depsInstalledByDependency, err := Install(ctx, isLock, filepath, depsDeps, dir)
 		if err != nil {
 			return nil, err
 		}
@@ -152,21 +160,23 @@ func LockExists(dir string) (bool, error) {
 	return true, nil
 }
 
-func ChooseJsonnetFile(dir string) (string, error) {
+func ChooseJsonnetFile(dir string) (string, bool, error) {
 	lockfile := path.Join(dir, JsonnetLockFile)
 	jsonnetfile := path.Join(dir, JsonnetFile)
 	filename := lockfile
+	isLock := true
 
 	lockExists, err := LockExists(dir)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	if !lockExists {
 		filename = jsonnetfile
+		isLock = false
 	}
 
-	return filename, err
+	return filename, isLock, err
 }
 
 func LoadJsonnetfile(filepath string) (spec.JsonnetFile, error) {

@@ -59,23 +59,6 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 			return nil, errors.Wrap(err, "failed to install package")
 		}
 
-		// If dependencies are being installed from a lock file, the transitive
-		// dependencies are not questioned, but the locked dependencies are
-		// just installed.
-		if isLock {
-			continue
-		}
-
-		lock.Dependencies, err = insertDependency(lock.Dependencies, spec.Dependency{
-			Name:      dep.Name,
-			Source:    dep.Source,
-			Version:   lockVersion,
-			DepSource: dependencySourceIdentifier,
-		})
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to insert dependency to lock dependencies")
-		}
-
 		destPath := path.Join(dir, dep.Name)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to find destination path for package")
@@ -93,6 +76,23 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 		err = os.Rename(path.Join(tmpDir, subdir), destPath)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to move package")
+		}
+
+		lock.Dependencies, err = insertDependency(lock.Dependencies, spec.Dependency{
+			Name:      dep.Name,
+			Source:    dep.Source,
+			Version:   lockVersion,
+			DepSource: dependencySourceIdentifier,
+		})
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to insert dependency to lock dependencies")
+		}
+
+		// If dependencies are being installed from a lock file, the transitive
+		// dependencies are not questioned, the locked dependencies are just
+		// installed.
+		if isLock {
+			continue
 		}
 
 		filepath, isLock, err := ChooseJsonnetFile(destPath)

@@ -101,9 +101,19 @@ func Main() int {
 }
 
 func initCommand() int {
-	err := ioutil.WriteFile(pkg.JsonnetFile, []byte("{}"), 0644)
+	exists, err := pkg.FileExists(pkg.JsonnetFile)
 	if err != nil {
-		kingpin.Fatalf("Failed to write new jsonnetfile.json: %v", err)
+		kingpin.Errorf("Failed to check for jsonnetfile.json: %v", err)
+		return 1
+	}
+
+	if exists {
+		kingpin.Errorf("jsonnetfile.json already exists")
+		return 1
+	}
+
+	if err := ioutil.WriteFile(pkg.JsonnetFile, []byte("{}"), 0644); err != nil {
+		kingpin.Errorf("Failed to write new jsonnetfile.json: %v", err)
 		return 1
 	}
 

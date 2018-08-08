@@ -23,7 +23,7 @@ build:
 
 install: build
 	@$(eval OUTPUT=$(OUT_DIR)/$(GOOS)/$(GOARCH)/$(BIN))
-	@echo ">> copying $(BIN) into $(GOPATH)/$(BIN)"
+	@echo ">> copying $(BIN) into $(GOPATH)/bin/$(BIN)"
 	@cp $(OUTPUT) $(GOPATH)/bin/$(BIN)
 
 test:

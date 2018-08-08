@@ -147,9 +147,8 @@ func insertDependency(deps []spec.Dependency, newDep spec.Dependency) ([]spec.De
 	return res, nil
 }
 
-func LockExists(dir string) (bool, error) {
-	lockfile := path.Join(dir, JsonnetLockFile)
-	_, err := os.Stat(lockfile)
+func FileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false, nil
 	}
@@ -166,7 +165,7 @@ func ChooseJsonnetFile(dir string) (string, bool, error) {
 	filename := lockfile
 	isLock := true
 
-	lockExists, err := LockExists(dir)
+	lockExists, err := FileExists(filepath.Join(dir, JsonnetLockFile))
 	if err != nil {
 		return "", false, err
 	}

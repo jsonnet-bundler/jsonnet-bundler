@@ -112,7 +112,7 @@ func initCommand() int {
 		return 1
 	}
 
-	if err := ioutil.WriteFile(pkg.JsonnetFile, []byte("{}"), 0644); err != nil {
+	if err := ioutil.WriteFile(pkg.JsonnetFile, []byte("{}\n"), 0644); err != nil {
 		kingpin.Errorf("Failed to write new jsonnetfile.json: %v", err)
 		return 1
 	}
@@ -305,6 +305,7 @@ func installCommand(jsonnetHome string, urls ...*url.URL) int {
 			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
 			return 3
 		}
+		b = append(b, []byte("\n")...)
 
 		err = ioutil.WriteFile(pkg.JsonnetFile, b, 0644)
 		if err != nil {
@@ -317,6 +318,7 @@ func installCommand(jsonnetHome string, urls ...*url.URL) int {
 			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
 			return 3
 		}
+		b = append(b, []byte("\n")...)
 
 		err = ioutil.WriteFile(pkg.JsonnetLockFile, b, 0644)
 		if err != nil {
@@ -356,6 +358,7 @@ func updateCommand(jsonnetHome string, urls ...*url.URL) int {
 		kingpin.Fatalf("failed to encode jsonnet file: %v", err)
 		return 3
 	}
+	b = append(b, []byte("\n")...)
 
 	err = ioutil.WriteFile(pkg.JsonnetLockFile, b, 0644)
 	if err != nil {

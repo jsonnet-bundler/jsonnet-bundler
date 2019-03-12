@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/fatih/color"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/pkg/errors"
 )
@@ -58,6 +59,8 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to install package")
 		}
+
+		color.Green(">>> Installed %s version %s\n", dep.Name, dep.Version)
 
 		destPath := path.Join(dir, dep.Name)
 		if err != nil {

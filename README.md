@@ -44,9 +44,10 @@ jb install https://github.com/anguslees/kustomize-libsonnet
 ```
 
 Now write `myconfig.jsonnet`, which can import a file from that package.
+Remember to use `-J vendor` when running Jsonnet to include the vendor tree.
 
 ```jsonnet
-local kustomize = import 'vendor/kustomize-libsonnet/kustomize.libsonnet';
+local kustomize = import 'kustomize-libsonnet/kustomize.libsonnet';
 
 local my_resource = {
   metadata: {
@@ -57,15 +58,15 @@ local my_resource = {
 kustomize.namePrefix('staging-')(my_resource)
 ```
 
-Depend on a package that is in a subtree of a Github repo (this package also
+To depend on a package that is in a subtree of a Github repo (this package also
 happens to bring in a transitive dependency):
 
 ```sh
 jb install https://github.com/coreos/prometheus-operator/jsonnet/prometheus-operator
 ```
 
-Note that if you are copy pasting from the Github website's address bar,
-remove the `tree/master` from the path.
+*Note that if you are copy pasting from the Github website's address bar,
+remove the `tree/master` from the path.*
 
 If pushed to Github, your project can now be referenced from other packages in
 the same way.

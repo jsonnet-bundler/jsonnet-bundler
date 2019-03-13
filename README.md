@@ -20,7 +20,7 @@ go get github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
 
 ## Current Limitations
 
-- Always clones entire dependent repositories, even when updating
+- Always downloads entire dependent repositories, even when updating
 - If two dependencies depend on the same package (diamond problem), they must require the same version
 
 
@@ -35,9 +35,11 @@ jb init
 ```
 
 The existence of the `jsonnetfile.json` file means your directory is now a
-jsonnet-bundler package.
+jsonnet-bundler package that can define dependencies.
 
 To depend on another package (another Github repository):
+*Note that your dependency need not be initialized with a `jsonnetfile.json`.
+If it is not, it is assumed it has no transitive dependencies.*
 
 ```sh
 jb install https://github.com/anguslees/kustomize-libsonnet
@@ -69,7 +71,7 @@ jb install https://github.com/coreos/prometheus-operator/jsonnet/prometheus-oper
 remove the `tree/master` from the path.*
 
 If pushed to Github, your project can now be referenced from other packages in
-the same way.
+the same way, with its dependencies fetched automatically.
 
 
 ## All command line flags

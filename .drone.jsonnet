@@ -8,7 +8,6 @@
   platform: {
     os: 'linux',
     arch: 'amd64',
-    version: 1,
   },
 
   steps: [

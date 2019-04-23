@@ -12,7 +12,6 @@ steps:
   image: golang:1.12
   commands:
   - go mod vendor
-  - go mod tidy
   - git diff --exit-code
   environment:
     CGO_ENABLED: 0

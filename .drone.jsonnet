@@ -30,8 +30,7 @@
       name: 'gomod',
       commands: [
         'go mod vendor',
-        'go mod tidy',
-        'git diff --exit-code'
+        'git diff --exit-code',
       ],
     },
 
@@ -53,4 +52,3 @@
     },
   ],
 }
-

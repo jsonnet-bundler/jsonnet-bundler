@@ -1,0 +1,24 @@
+---
+kind: pipeline
+name: build
+
+platform:
+  os: linux
+  arch: amd64
+  version: 1
+
+steps:
+- name: build
+  pull: always
+  image: golang:1.12
+  commands:
+  - make
+  environment:
+    CGO_ENABLED: 0
+    GO111MODULE: on
+  when:
+    event:
+      exclude:
+      - tag
+
+...

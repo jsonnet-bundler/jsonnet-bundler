@@ -27,19 +27,19 @@
 
   steps: [
     golang {
+      name: 'build',
+      commands: [
+        'make build',
+        'make test',
+      ],
+    },
+
+    golang {
       name: 'generate',
       commands: [
         'make check-license',
         'make generate',
         'git diff --exit-code',
-      ],
-    },
-
-    golang {
-      name: 'build',
-      commands: [
-        'make build',
-        'make test',
       ],
     },
   ],

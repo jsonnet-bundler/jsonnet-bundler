@@ -7,13 +7,12 @@ platform:
   arch: amd64
 
 steps:
-- name: generate
+- name: build
   pull: always
   image: golang:1.12
   commands:
-  - make check-license
-  - make generate
-  - git diff --exit-code
+  - make build
+  - make test
   environment:
     CGO_ENABLED: 0
     GO111MODULE: on
@@ -22,12 +21,13 @@ steps:
       exclude:
       - tag
 
-- name: build
+- name: generate
   pull: always
   image: golang:1.12
   commands:
-  - make build
-  - make test
+  - make check-license
+  - make generate
+  - git diff --exit-code
   environment:
     CGO_ENABLED: 0
     GO111MODULE: on

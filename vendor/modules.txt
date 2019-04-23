@@ -1,0 +1,17 @@
+# github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc
+github.com/alecthomas/template
+github.com/alecthomas/template/parse
+# github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf
+github.com/alecthomas/units
+# github.com/fatih/color v1.7.0
+github.com/fatih/color
+# github.com/mattn/go-colorable v0.0.9
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.6
+github.com/mattn/go-isatty
+# github.com/pkg/errors v0.8.0
+github.com/pkg/errors
+# golang.org/x/sys v0.0.0-20190310054646-10058d7d4faa
+golang.org/x/sys/unix
+# gopkg.in/alecthomas/kingpin.v2 v2.2.6
+gopkg.in/alecthomas/kingpin.v2

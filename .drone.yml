@@ -7,6 +7,21 @@ platform:
   arch: amd64
 
 steps:
+- name: gomod
+  pull: always
+  image: golang:1.12
+  commands:
+  - go mod vendor
+  - go mod tidy
+  - git diff --exit-code
+  environment:
+    CGO_ENABLED: 0
+    GO111MODULE: on
+  when:
+    event:
+      exclude:
+      - tag
+
 - name: build
   pull: always
   image: golang:1.12

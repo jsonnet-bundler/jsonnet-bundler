@@ -27,6 +27,15 @@
 
   steps: [
     golang {
+      name: 'gomod',
+      commands: [
+        'go mod vendor',
+        'go mod tidy',
+        'git diff --exit-code'
+      ],
+    },
+
+    golang {
       name: 'build',
       commands: [
         'make build',
@@ -44,3 +53,4 @@
     },
   ],
 }
+

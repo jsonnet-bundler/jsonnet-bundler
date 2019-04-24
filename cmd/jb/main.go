@@ -100,26 +100,6 @@ func Main() int {
 	return 0
 }
 
-func initCommand() int {
-	exists, err := pkg.FileExists(pkg.JsonnetFile)
-	if err != nil {
-		kingpin.Errorf("Failed to check for jsonnetfile.json: %v", err)
-		return 1
-	}
-
-	if exists {
-		kingpin.Errorf("jsonnetfile.json already exists")
-		return 1
-	}
-
-	if err := ioutil.WriteFile(pkg.JsonnetFile, []byte("{}\n"), 0644); err != nil {
-		kingpin.Errorf("Failed to write new jsonnetfile.json: %v", err)
-		return 1
-	}
-
-	return 0
-}
-
 func parseDepedency(urlString string) *spec.Dependency {
 	if spec := parseGitSSHDependency(urlString); spec != nil {
 		return spec

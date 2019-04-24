@@ -86,15 +86,20 @@ func Main() int {
 		return 2
 	}
 
+	workdir, err := os.Getwd()
+	if err != nil {
+		return 1
+	}
+
 	switch command {
 	case initCmd.FullCommand():
-		return initCommand()
+		return initCommand(workdir)
 	case installCmd.FullCommand():
-		return installCommand(cfg.JsonnetHome, *installCmdURLs...)
+		return installCommand(workdir, cfg.JsonnetHome, *installCmdURLs...)
 	case updateCmd.FullCommand():
 		return updateCommand(cfg.JsonnetHome)
 	default:
-		installCommand(cfg.JsonnetHome)
+		installCommand(workdir, cfg.JsonnetHome)
 	}
 
 	return 0

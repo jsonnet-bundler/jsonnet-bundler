@@ -28,7 +28,7 @@ install: build
 
 test:
 	@echo ">> running all tests"
-	@go test -i $(PKGS)
+	@go test $(PKGS)
 
 generate: embedmd
 	@echo ">> generating docs"

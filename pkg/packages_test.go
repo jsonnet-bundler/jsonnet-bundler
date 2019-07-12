@@ -21,8 +21,8 @@ import (
 )
 
 func TestInsert(t *testing.T) {
-	deps := []*spec.Dependency{&spec.Dependency{Name: "test1", Version: "latest"}}
-	dep := &spec.Dependency{Name: "test2", Version: "latest"}
+	deps := []spec.Dependency{spec.Dependency{Name: "test1", Version: "latest"}}
+	dep := spec.Dependency{Name: "test2", Version: "latest"}
 
 	res, err := insertDependency(deps, dep)
 	if err != nil {

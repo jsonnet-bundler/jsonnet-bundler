@@ -28,7 +28,7 @@ install: build
 
 test:
 	@echo ">> running all unit tests"
-	@go test $(PKGS)
+	go test -v $(PKGS)
 
 test-integration:
 	@echo ">> running all integration tests"

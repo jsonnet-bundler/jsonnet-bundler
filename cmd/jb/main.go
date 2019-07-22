@@ -98,7 +98,7 @@ func Main() int {
 	return 0
 }
 
-func parseDepedency(urlString string) *spec.Dependency {
+func parseDependency(urlString string) *spec.Dependency {
 	if spec := parseGitSSHDependency(urlString); spec != nil {
 		return spec
 	}

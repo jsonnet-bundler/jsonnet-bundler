@@ -46,14 +46,7 @@ func installCommand(dir, jsonnetHome string, paths ...string) int {
 
 	if len(paths) > 0 {
 		for _, path := range paths {
-			// install package specified in command
-			// $ jsonnetpkg install ksonnet git@github.com:ksonnet/ksonnet-lib
-			// $ jsonnetpkg install grafonnet git@github.com:grafana/grafonnet-lib grafonnet
-			// $ jsonnetpkg install github.com/grafana/grafonnet-lib/grafonnet
-			//
-			// github.com/(slug)/(dir)
-
-			newDep := parseDepedency(path)
+			newDep := parseDependency(path)
 			if newDep == nil {
 				kingpin.Errorf("ignoring unrecognized path: %s", path)
 				continue

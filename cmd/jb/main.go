@@ -30,15 +30,9 @@ const (
 	installActionName = "install"
 	updateActionName  = "update"
 	initActionName    = "init"
-	basePath          = ".jsonnetpkg"
-	srcDirName        = "src"
 )
 
 var (
-	availableSubcommands = []string{
-		initActionName,
-		installActionName,
-	}
 	gitSSHRegex                   = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git")
 	gitSSHWithVersionRegex        = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git@(.*)")
 	gitSSHWithPathRegex           = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)")

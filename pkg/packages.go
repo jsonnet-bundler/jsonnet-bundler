@@ -24,13 +24,12 @@ import (
 	"path/filepath"
 
 	"github.com/fatih/color"
+	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/pkg/errors"
 )
 
 var (
-	JsonnetFile     = "jsonnetfile.json"
-	JsonnetLockFile = "jsonnetfile.lock.json"
 	VersionMismatch = errors.New("multiple colliding versions specified")
 )
 
@@ -161,18 +160,18 @@ func FileExists(path string) (bool, error) {
 }
 
 func ChooseJsonnetFile(dir string) (string, bool, error) {
-	lockfile := path.Join(dir, JsonnetLockFile)
-	jsonnetfile := path.Join(dir, JsonnetFile)
-	filename := lockfile
+	lockfilePath := path.Join(dir, jsonnetfile.LockFile)
+	jsonnetfilePath := path.Join(dir, jsonnetfile.File)
+	filename := lockfilePath
 	isLock := true
 
-	lockExists, err := FileExists(filepath.Join(dir, JsonnetLockFile))
+	lockExists, err := FileExists(filepath.Join(dir, jsonnetfile.LockFile))
 	if err != nil {
 		return "", false, err
 	}
 
 	if !lockExists {
-		filename = jsonnetfile
+		filename = jsonnetfilePath
 		isLock = false
 	}
 

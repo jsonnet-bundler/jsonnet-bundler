@@ -18,7 +18,6 @@ package main
 
 import (
 	"io/ioutil"
-	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,7 +29,7 @@ import (
 func TestInstallCommand(t *testing.T) {
 	testcases := []struct {
 		Name                    string
-		URLs                    []*url.URL
+		URLs                    []string
 		ExpectedCode            int
 		ExpectedJsonnetFile     []byte
 		ExpectedJsonnetLockFile []byte

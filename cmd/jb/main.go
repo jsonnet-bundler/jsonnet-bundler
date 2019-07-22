@@ -68,7 +68,7 @@ func Main() int {
 	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
 
 	installCmd := a.Command(installActionName, "Install all dependencies or install specific ones")
-	installCmdURLs := installCmd.Arg("packages", "URLs to package to install").URLList()
+	installCmdPaths := installCmd.Arg("paths", "paths to packages to install, URLs or file paths").Strings()
 
 	updateCmd := a.Command(updateActionName, "Update all dependencies.")
 
@@ -88,7 +88,7 @@ func Main() int {
 	case initCmd.FullCommand():
 		return initCommand(workdir)
 	case installCmd.FullCommand():
-		return installCommand(workdir, cfg.JsonnetHome, *installCmdURLs...)
+		return installCommand(workdir, cfg.JsonnetHome, *installCmdPaths...)
 	case updateCmd.FullCommand():
 		return updateCommand(cfg.JsonnetHome)
 	default:

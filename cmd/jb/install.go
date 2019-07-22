@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"path/filepath"
 
@@ -28,7 +27,7 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-func installCommand(dir, jsonnetHome string, urls ...*url.URL) int {
+func installCommand(dir, jsonnetHome string, paths ...string) int {
 	if dir == "" {
 		dir = "."
 	}
@@ -45,8 +44,8 @@ func installCommand(dir, jsonnetHome string, urls ...*url.URL) int {
 		return 1
 	}
 
-	if len(urls) > 0 {
-		for _, url := range urls {
+	if len(paths) > 0 {
+		for _, path := range paths {
 			// install package specified in command
 			// $ jsonnetpkg install ksonnet git@github.com:ksonnet/ksonnet-lib
 			// $ jsonnetpkg install grafonnet git@github.com:grafana/grafonnet-lib grafonnet
@@ -54,10 +53,9 @@ func installCommand(dir, jsonnetHome string, urls ...*url.URL) int {
 			//
 			// github.com/(slug)/(dir)
 
-			urlString := url.String()
-			newDep := parseDepedency(urlString)
+			newDep := parseDepedency(path)
 			if newDep == nil {
-				kingpin.Errorf("ignoring unrecognized url: %s", url)
+				kingpin.Errorf("ignoring unrecognized path: %s", path)
 				continue
 			}
 

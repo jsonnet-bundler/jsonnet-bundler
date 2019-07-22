@@ -15,18 +15,12 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
-	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/pkg/errors"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -216,41 +210,4 @@ func parseGithubDependency(urlString string) *spec.Dependency {
 		},
 		Version: version,
 	}
-}
-
-func updateCommand(jsonnetHome string, urls ...*url.URL) int {
-	m, err := pkg.LoadJsonnetfile(jsonnetfile.File)
-	if err != nil {
-		kingpin.Fatalf("failed to load jsonnetfile: %v", err)
-		return 1
-	}
-
-	err = os.MkdirAll(jsonnetHome, os.ModePerm)
-	if err != nil {
-		kingpin.Fatalf("failed to create jsonnet home path: %v", err)
-		return 3
-	}
-
-	// When updating, the lockfile is explicitly ignored.
-	isLock := false
-	lock, err := pkg.Install(context.TODO(), isLock, jsonnetfile.File, m, jsonnetHome)
-	if err != nil {
-		kingpin.Fatalf("failed to install: %v", err)
-		return 3
-	}
-
-	b, err := json.MarshalIndent(lock, "", "    ")
-	if err != nil {
-		kingpin.Fatalf("failed to encode jsonnet file: %v", err)
-		return 3
-	}
-	b = append(b, []byte("\n")...)
-
-	err = ioutil.WriteFile(jsonnetfile.LockFile, b, 0644)
-	if err != nil {
-		kingpin.Fatalf("failed to write lock file: %v", err)
-		return 3
-	}
-
-	return 0
 }

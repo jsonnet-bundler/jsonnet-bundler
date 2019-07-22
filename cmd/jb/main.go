@@ -20,6 +20,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/pkg/errors"
@@ -92,20 +93,24 @@ func Main() int {
 	return 0
 }
 
-func parseDependency(urlString string) *spec.Dependency {
-	if spec := parseGitSSHDependency(urlString); spec != nil {
-		return spec
+func parseDependency(path string) *spec.Dependency {
+	if d := parseGitSSHDependency(path); d != nil {
+		return d
 	}
 
-	if spec := parseGithubDependency(urlString); spec != nil {
-		return spec
+	if d := parseGithubDependency(path); d != nil {
+		return d
+	}
+
+	if d := parseLocalDependency(path); d != nil {
+		return d
 	}
 
 	return nil
 }
 
-func parseGitSSHDependency(urlString string) *spec.Dependency {
-	if !gitSSHRegex.MatchString(urlString) {
+func parseGitSSHDependency(p string) *spec.Dependency {
+	if !gitSSHRegex.MatchString(p) {
 		return nil
 	}
 
@@ -115,27 +120,27 @@ func parseGitSSHDependency(urlString string) *spec.Dependency {
 	repo := ""
 	version := "master"
 
-	if gitSSHWithPathAndVersionRegex.MatchString(urlString) {
-		matches := gitSSHWithPathAndVersionRegex.FindStringSubmatch(urlString)
+	if gitSSHWithPathAndVersionRegex.MatchString(p) {
+		matches := gitSSHWithPathAndVersionRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
 		repo = matches[3]
 		subdir = matches[4]
 		version = matches[5]
-	} else if gitSSHWithPathRegex.MatchString(urlString) {
-		matches := gitSSHWithPathRegex.FindStringSubmatch(urlString)
+	} else if gitSSHWithPathRegex.MatchString(p) {
+		matches := gitSSHWithPathRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
 		repo = matches[3]
 		subdir = matches[4]
-	} else if gitSSHWithVersionRegex.MatchString(urlString) {
-		matches := gitSSHWithVersionRegex.FindStringSubmatch(urlString)
+	} else if gitSSHWithVersionRegex.MatchString(p) {
+		matches := gitSSHWithVersionRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
 		repo = matches[3]
 		version = matches[4]
 	} else {
-		matches := gitSSHRegex.FindStringSubmatch(urlString)
+		matches := gitSSHRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
 		repo = matches[3]
@@ -153,8 +158,8 @@ func parseGitSSHDependency(urlString string) *spec.Dependency {
 	}
 }
 
-func parseGithubDependency(urlString string) *spec.Dependency {
-	if !githubSlugRegex.MatchString(urlString) {
+func parseGithubDependency(p string) *spec.Dependency {
+	if !githubSlugRegex.MatchString(p) {
 		return nil
 	}
 
@@ -164,30 +169,30 @@ func parseGithubDependency(urlString string) *spec.Dependency {
 	subdir := ""
 	version := "master"
 
-	if githubSlugWithPathRegex.MatchString(urlString) {
-		if githubSlugWithPathAndVersionRegex.MatchString(urlString) {
-			matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(urlString)
+	if githubSlugWithPathRegex.MatchString(p) {
+		if githubSlugWithPathAndVersionRegex.MatchString(p) {
+			matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(p)
 			user = matches[1]
 			repo = matches[2]
 			subdir = matches[3]
 			version = matches[4]
 			name = path.Base(subdir)
 		} else {
-			matches := githubSlugWithPathRegex.FindStringSubmatch(urlString)
+			matches := githubSlugWithPathRegex.FindStringSubmatch(p)
 			user = matches[1]
 			repo = matches[2]
 			subdir = matches[3]
 			name = path.Base(subdir)
 		}
 	} else {
-		if githubSlugWithVersionRegex.MatchString(urlString) {
-			matches := githubSlugWithVersionRegex.FindStringSubmatch(urlString)
+		if githubSlugWithVersionRegex.MatchString(p) {
+			matches := githubSlugWithVersionRegex.FindStringSubmatch(p)
 			user = matches[1]
 			repo = matches[2]
 			name = repo
 			version = matches[3]
 		} else {
-			matches := githubSlugRegex.FindStringSubmatch(urlString)
+			matches := githubSlugRegex.FindStringSubmatch(p)
 			user = matches[1]
 			repo = matches[2]
 			name = repo
@@ -203,5 +208,41 @@ func parseGithubDependency(urlString string) *spec.Dependency {
 			},
 		},
 		Version: version,
+	}
+}
+
+func parseLocalDependency(p string) *spec.Dependency {
+	if p == "" {
+		return nil
+	}
+	if strings.HasPrefix(p, "github.com") {
+		return nil
+	}
+	if strings.HasPrefix(p, "git+ssh") {
+		return nil
+	}
+
+	clean := filepath.Clean(p)
+
+	info, err := os.Stat(clean)
+	if err != nil {
+		wd, _ := os.Getwd()
+		fmt.Println(err, wd)
+		return nil
+	}
+
+	if !info.IsDir() {
+		return nil
+	}
+
+	return &spec.Dependency{
+		Name: info.Name(),
+		Source: spec.Source{
+			GitSource: &spec.GitSource{
+				Remote: ".",
+				Subdir: clean,
+			},
+		},
+		Version: ".",
 	}
 }

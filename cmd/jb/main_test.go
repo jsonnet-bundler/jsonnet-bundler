@@ -15,6 +15,7 @@
 package main
 
 import (
+	"os"
 	"testing"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
@@ -22,6 +23,13 @@ import (
 )
 
 func TestParseDepedency(t *testing.T) {
+	const testFolder = "test/jsonnet/foobar"
+	err := os.MkdirAll(testFolder, os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll("test")
+
 	tests := []struct {
 		name string
 		path string
@@ -63,6 +71,20 @@ func TestParseDepedency(t *testing.T) {
 					},
 				},
 				Version: "master",
+			},
+		},
+		{
+			name: "local",
+			path: testFolder,
+			want: &spec.Dependency{
+				Name: "foobar",
+				Source: spec.Source{
+					GitSource: &spec.GitSource{
+						Remote: ".",
+						Subdir: "test/jsonnet/foobar",
+					},
+				},
+				Version: ".",
 			},
 		},
 	}

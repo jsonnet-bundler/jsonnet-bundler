@@ -46,11 +46,11 @@ func TestInstallCommand(t *testing.T) {
 				{
 					Scheme: "https",
 					Host:   "github.com",
-					Path:   "jsonnet-bundler/jsonnet-bundler",
+					Path:   "jsonnet-bundler/jsonnet-bundler@v0.1.0",
 				},
 			},
 			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "master"}]}`),
+			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}]}`),
 			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f"}]}`),
 		},
 	}
@@ -60,6 +60,7 @@ func TestInstallCommand(t *testing.T) {
 			tempDir, err := ioutil.TempDir("", "jb-install")
 			assert.NoError(t, err)
 			defer os.Remove(tempDir)
+			defer os.RemoveAll("vendor") // delete test vendor folder
 
 			jsonnetFile := filepath.Join(tempDir, jsonnetfile.File)
 			jsonnetLockFile := filepath.Join(tempDir, jsonnetfile.LockFile)

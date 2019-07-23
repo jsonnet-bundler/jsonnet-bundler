@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseDepedency(t *testing.T) {
+func TestParseDependency(t *testing.T) {
 	const testFolder = "test/jsonnet/foobar"
 	err := os.MkdirAll(testFolder, os.ModePerm)
 	if err != nil {
@@ -79,12 +79,11 @@ func TestParseDepedency(t *testing.T) {
 			want: &spec.Dependency{
 				Name: "foobar",
 				Source: spec.Source{
-					GitSource: &spec.GitSource{
-						Remote: ".",
-						Subdir: "test/jsonnet/foobar",
+					LocalSource: &spec.LocalSource{
+						Directory: "test/jsonnet/foobar",
 					},
 				},
-				Version: ".",
+				Version: "",
 			},
 		},
 	}

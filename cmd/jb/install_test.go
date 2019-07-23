@@ -40,26 +40,28 @@ func TestInstallCommand(t *testing.T) {
 			ExpectedJsonnetFile:     []byte(`{"dependencies":null}`),
 			ExpectedJsonnetLockFile: []byte(`{"dependencies":null}`),
 		}, {
-			Name: "OneURL",
-			URLs: []*url.URL{
-				{
-					Scheme: "https",
-					Host:   "github.com",
-					Path:   "jsonnet-bundler/jsonnet-bundler@v0.1.0",
-				},
-			},
+			Name:                    "OneURL",
+			URLs:                    []string{"github.com/jsonnet-bundler/jsonnet-bundler@v0.1.0"},
 			ExpectedCode:            0,
 			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}]}`),
 			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f"}]}`),
+		}, {
+			Name:                    "Relative",
+			URLs:                    []string{"test/jsonnet/foobar"},
+			ExpectedCode:            0,
+			ExpectedJsonnetFile:     []byte(`{"dependencies":null}`),
+			ExpectedJsonnetLockFile: []byte(`{"dependencies":null}`),
 		},
 	}
 
 	for _, tc := range testcases {
-		t.Run(tc.Name, func(t *testing.T) {
+		_ = t.Run(tc.Name, func(t *testing.T) {
 			tempDir, err := ioutil.TempDir("", "jb-install")
 			assert.NoError(t, err)
+			err = os.MkdirAll(filepath.Join(tempDir, "test/jsonnet/foobar"), os.ModePerm)
+			assert.NoError(t, err)
 			defer os.Remove(tempDir)
-			defer os.RemoveAll("vendor") // delete test vendor folder
+			defer os.RemoveAll("vendor") // cloning jsonnet-bundler will create this folder
 
 			jsonnetFile := filepath.Join(tempDir, jsonnetfile.File)
 			jsonnetLockFile := filepath.Join(tempDir, jsonnetfile.LockFile)

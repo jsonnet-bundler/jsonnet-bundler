@@ -12,29 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spec
+package pkg
 
-type JsonnetFile struct {
-	Dependencies []Dependency `json:"dependencies"`
+import (
+	"context"
+	"fmt"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+)
+
+type LocalPackage struct {
+	Source *spec.LocalSource
 }
 
-type Dependency struct {
-	Name      string `json:"name"`
-	Source    Source `json:"source"`
-	Version   string `json:"version"`
-	DepSource string `json:"-"`
+func NewLocalPackage(source *spec.LocalSource) Interface {
+	return &LocalPackage{
+		Source: source,
+	}
 }
 
-type Source struct {
-	GitSource   *GitSource   `json:"git,omitempty"`
-	LocalSource *LocalSource `json:"local,omitempty"`
-}
+func (p *LocalPackage) Install(ctx context.Context, dir, version string) (lockVersion string, err error) {
+	fmt.Println("SYMLINK THIS SHIT, HAHA")
 
-type GitSource struct {
-	Remote string `json:"remote"`
-	Subdir string `json:"subdir"`
-}
+	// TODO: Where do I get the name of the package?
 
-type LocalSource struct {
-	Directory string `json:"directory"`
+	fmt.Println(ctx, dir, version)
+
+	return "", nil
 }

@@ -54,6 +54,9 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 			p = NewGitPackage(dep.Source.GitSource)
 			subdir = dep.Source.GitSource.Subdir
 		}
+		if dep.Source.LocalSource != nil {
+			p = NewLocalPackage(dep.Source.LocalSource)
+		}
 
 		lockVersion, err := p.Install(ctx, tmpDir, dep.Version)
 		if err != nil {
@@ -100,7 +103,7 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 			return nil, err
 		}
 		depsDeps, err := LoadJsonnetfile(filepath)
-		// It is ok for depedencies not to have a JsonnetFile, it just means
+		// It is ok for dependencies not to have a JsonnetFile, it just means
 		// they do not have transitive dependencies of their own.
 		if err != nil && !os.IsNotExist(err) {
 			return nil, err

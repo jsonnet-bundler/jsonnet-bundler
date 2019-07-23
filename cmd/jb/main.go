@@ -226,8 +226,6 @@ func parseLocalDependency(p string) *spec.Dependency {
 
 	info, err := os.Stat(clean)
 	if err != nil {
-		wd, _ := os.Getwd()
-		fmt.Println(err, wd)
 		return nil
 	}
 
@@ -238,11 +236,10 @@ func parseLocalDependency(p string) *spec.Dependency {
 	return &spec.Dependency{
 		Name: info.Name(),
 		Source: spec.Source{
-			GitSource: &spec.GitSource{
-				Remote: ".",
-				Subdir: clean,
+			LocalSource: &spec.LocalSource{
+				Directory: clean,
 			},
 		},
-		Version: ".",
+		Version: "",
 	}
 }

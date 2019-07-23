@@ -27,8 +27,12 @@ install: build
 	@cp $(OUTPUT) $(GOPATH)/bin/$(BIN)
 
 test:
-	@echo ">> running all tests"
+	@echo ">> running all unit tests"
 	@go test $(PKGS)
+
+test-integration:
+	@echo ">> running all integration tests"
+	go test -v -tags=integration $(PKGS)
 
 generate: embedmd
 	@echo ">> generating docs"

@@ -12,58 +12,80 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pkg
+package jsonnetfile_test
 
 import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/stretchr/testify/assert"
 )
 
-const NotExist = "/this/does/not/exist"
+const notExist = "/this/does/not/exist"
 
-func TestInsertDependency(t *testing.T) {
-	deps := []spec.Dependency{{Name: "test1", Version: "latest"}}
-	dep := spec.Dependency{Name: "test2", Version: "latest"}
+func TestChoose(t *testing.T) {
+	testcases := []struct {
+		Name             string
+		Jsonnetfile      []byte
+		JsonnetfileLock  []byte
+		ExpectedFilename string
+		ExpectedLock     bool
+		ExpectedError    error
+	}{{
+		Name:             "NoFiles",
+		ExpectedFilename: "",
+		ExpectedLock:     false,
+		ExpectedError:    jsonnetfile.ErrNoFile,
+	}, {
+		Name:             "Jsonnetfile",
+		Jsonnetfile:      []byte(`{}`),
+		ExpectedFilename: jsonnetfile.File,
+		ExpectedLock:     false,
+		ExpectedError:    nil,
+	}, {
+		Name:             "JsonnetfileLock",
+		Jsonnetfile:      []byte(`{}`),
+		JsonnetfileLock:  []byte(`{}`),
+		ExpectedFilename: jsonnetfile.LockFile,
+		ExpectedLock:     true,
+		ExpectedError:    nil,
+	}}
 
-	res, err := insertDependency(deps, dep)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(res) != 2 {
-		t.Fatal("Incorrectly inserted")
-	}
-}
-
-func TestFileExists(t *testing.T) {
-	{
-		exists, err := FileExists(NotExist)
-		assert.False(t, exists)
-		assert.Nil(t, err)
-	}
-	{
-		tempFile, err := ioutil.TempFile("", "jb-exists")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		defer func() {
-			err := os.Remove(tempFile.Name())
+	for _, tc := range testcases {
+		t.Run(tc.Name, func(t *testing.T) {
+			dir, err := ioutil.TempDir("", "jsonnetfile-choose")
 			assert.Nil(t, err)
-		}()
+			defer os.Remove(dir)
 
-		exists, err := FileExists(tempFile.Name())
-		assert.True(t, exists)
-		assert.Nil(t, err)
+			if tc.Jsonnetfile != nil {
+				err := ioutil.WriteFile(filepath.Join(dir, jsonnetfile.File), tc.Jsonnetfile, os.ModePerm)
+				assert.NoError(t, err)
+			}
+			if tc.JsonnetfileLock != nil {
+				err := ioutil.WriteFile(filepath.Join(dir, jsonnetfile.LockFile), tc.JsonnetfileLock, os.ModePerm)
+				assert.NoError(t, err)
+			}
+
+			filename, isLock, err := jsonnetfile.Choose(dir)
+
+			assert.Equal(t, tc.ExpectedFilename, strings.TrimPrefix(filename, dir+"/"))
+			assert.Equal(t, tc.ExpectedLock, isLock)
+
+			if tc.ExpectedError != nil {
+				assert.EqualError(t, err, tc.ExpectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
 }
 
-func TestLoadJsonnetfile(t *testing.T) {
+func TestLoad(t *testing.T) {
 	empty := spec.JsonnetFile{}
 
 	jsonnetfileContent := `{
@@ -96,7 +118,7 @@ func TestLoadJsonnetfile(t *testing.T) {
 	}
 
 	{
-		jf, err := LoadJsonnetfile(NotExist)
+		jf, err := jsonnetfile.Load(notExist)
 		assert.Equal(t, empty, jf)
 		assert.Error(t, err)
 	}
@@ -110,11 +132,11 @@ func TestLoadJsonnetfile(t *testing.T) {
 			assert.Nil(t, err)
 		}()
 
-		tempFile := filepath.Join(tempDir, JsonnetFile)
+		tempFile := filepath.Join(tempDir, jsonnetfile.File)
 		err = ioutil.WriteFile(tempFile, []byte(`{}`), os.ModePerm)
 		assert.Nil(t, err)
 
-		jf, err := LoadJsonnetfile(tempFile)
+		jf, err := jsonnetfile.Load(tempFile)
 		assert.Nil(t, err)
 		assert.Equal(t, empty, jf)
 	}
@@ -128,11 +150,11 @@ func TestLoadJsonnetfile(t *testing.T) {
 			assert.Nil(t, err)
 		}()
 
-		tempFile := filepath.Join(tempDir, JsonnetFile)
+		tempFile := filepath.Join(tempDir, jsonnetfile.File)
 		err = ioutil.WriteFile(tempFile, []byte(jsonnetfileContent), os.ModePerm)
 		assert.Nil(t, err)
 
-		jf, err := LoadJsonnetfile(tempFile)
+		jf, err := jsonnetfile.Load(tempFile)
 		assert.Nil(t, err)
 		assert.Equal(t, jsonnetFileExpected, jf)
 	}

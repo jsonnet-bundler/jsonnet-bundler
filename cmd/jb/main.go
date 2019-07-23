@@ -1,18 +1,16 @@
-/*
-Copyright 2018 jsonnet-bundler authors All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// Copyright 2018 jsonnet-bundler authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package main
 
@@ -86,35 +84,20 @@ func Main() int {
 		return 2
 	}
 
+	workdir, err := os.Getwd()
+	if err != nil {
+		return 1
+	}
+
 	switch command {
 	case initCmd.FullCommand():
-		return initCommand()
+		return initCommand(workdir)
 	case installCmd.FullCommand():
-		return installCommand(cfg.JsonnetHome, *installCmdURLs...)
+		return installCommand(workdir, cfg.JsonnetHome, *installCmdURLs...)
 	case updateCmd.FullCommand():
 		return updateCommand(cfg.JsonnetHome)
 	default:
-		installCommand(cfg.JsonnetHome)
-	}
-
-	return 0
-}
-
-func initCommand() int {
-	exists, err := pkg.FileExists(pkg.JsonnetFile)
-	if err != nil {
-		kingpin.Errorf("Failed to check for jsonnetfile.json: %v", err)
-		return 1
-	}
-
-	if exists {
-		kingpin.Errorf("jsonnetfile.json already exists")
-		return 1
-	}
-
-	if err := ioutil.WriteFile(pkg.JsonnetFile, []byte("{}\n"), 0644); err != nil {
-		kingpin.Errorf("Failed to write new jsonnetfile.json: %v", err)
-		return 1
+		installCommand(workdir, cfg.JsonnetHome)
 	}
 
 	return 0
@@ -232,102 +215,6 @@ func parseGithubDependency(urlString string) *spec.Dependency {
 		},
 		Version: version,
 	}
-}
-
-func installCommand(jsonnetHome string, urls ...*url.URL) int {
-	workdir := "."
-
-	jsonnetfile, isLock, err := pkg.ChooseJsonnetFile(workdir)
-	if err != nil {
-		kingpin.Fatalf("failed to choose jsonnetfile: %v", err)
-		return 1
-	}
-
-	m, err := pkg.LoadJsonnetfile(jsonnetfile)
-	if err != nil {
-		kingpin.Fatalf("failed to load jsonnetfile: %v", err)
-		return 1
-	}
-
-	if len(urls) > 0 {
-		for _, url := range urls {
-			// install package specified in command
-			// $ jsonnetpkg install ksonnet git@github.com:ksonnet/ksonnet-lib
-			// $ jsonnetpkg install grafonnet git@github.com:grafana/grafonnet-lib grafonnet
-			// $ jsonnetpkg install github.com/grafana/grafonnet-lib/grafonnet
-			//
-			// github.com/(slug)/(dir)
-
-			urlString := url.String()
-			newDep := parseDepedency(urlString)
-			if newDep == nil {
-				kingpin.Errorf("ignoring unrecognized url: %s", url)
-				continue
-			}
-
-			oldDeps := m.Dependencies
-			newDeps := []spec.Dependency{}
-			oldDepReplaced := false
-			for _, d := range oldDeps {
-				if d.Name == newDep.Name {
-					newDeps = append(newDeps, *newDep)
-					oldDepReplaced = true
-				} else {
-					newDeps = append(newDeps, d)
-				}
-			}
-
-			if !oldDepReplaced {
-				newDeps = append(newDeps, *newDep)
-			}
-
-			m.Dependencies = newDeps
-		}
-	}
-
-	srcPath := filepath.Join(jsonnetHome)
-	err = os.MkdirAll(srcPath, os.ModePerm)
-	if err != nil {
-		kingpin.Fatalf("failed to create jsonnet home path: %v", err)
-		return 3
-	}
-
-	lock, err := pkg.Install(context.TODO(), isLock, jsonnetfile, m, jsonnetHome)
-	if err != nil {
-		kingpin.Fatalf("failed to install: %v", err)
-		return 3
-	}
-
-	// If installing from lock file there is no need to write any files back.
-	if !isLock {
-		b, err := json.MarshalIndent(m, "", "    ")
-		if err != nil {
-			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
-			return 3
-		}
-		b = append(b, []byte("\n")...)
-
-		err = ioutil.WriteFile(pkg.JsonnetFile, b, 0644)
-		if err != nil {
-			kingpin.Fatalf("failed to write jsonnet file: %v", err)
-			return 3
-		}
-
-		b, err = json.MarshalIndent(lock, "", "    ")
-		if err != nil {
-			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
-			return 3
-		}
-		b = append(b, []byte("\n")...)
-
-		err = ioutil.WriteFile(pkg.JsonnetLockFile, b, 0644)
-		if err != nil {
-			kingpin.Fatalf("failed to write lock file: %v", err)
-			return 3
-		}
-	}
-
-	return 0
 }
 
 func updateCommand(jsonnetHome string, urls ...*url.URL) int {

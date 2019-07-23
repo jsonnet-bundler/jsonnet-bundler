@@ -34,11 +34,12 @@ var (
 	VersionMismatch = errors.New("multiple colliding versions specified")
 )
 
-func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string, m spec.JsonnetFile, dir string) (lock *spec.JsonnetFile, err error) {
-	lock = &spec.JsonnetFile{}
+func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string, m spec.JsonnetFile, dir string) (*spec.JsonnetFile, error) {
+	lockfile := &spec.JsonnetFile{}
 	for _, dep := range m.Dependencies {
+
 		tmp := filepath.Join(dir, ".tmp")
-		err = os.MkdirAll(tmp, os.ModePerm)
+		err := os.MkdirAll(tmp, os.ModePerm)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create general tmp dir")
 		}
@@ -63,9 +64,6 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 		color.Green(">>> Installed %s version %s\n", dep.Name, dep.Version)
 
 		destPath := path.Join(dir, dep.Name)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to find destination path for package")
-		}
 
 		err = os.MkdirAll(path.Dir(destPath), os.ModePerm)
 		if err != nil {
@@ -81,7 +79,7 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 			return nil, errors.Wrap(err, "failed to move package")
 		}
 
-		lock.Dependencies, err = insertDependency(lock.Dependencies, spec.Dependency{
+		lockfile.Dependencies, err = insertDependency(lockfile.Dependencies, spec.Dependency{
 			Name:      dep.Name,
 			Source:    dep.Source,
 			Version:   lockVersion,
@@ -115,14 +113,14 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 		}
 
 		for _, d := range depsInstalledByDependency.Dependencies {
-			lock.Dependencies, err = insertDependency(lock.Dependencies, d)
+			lockfile.Dependencies, err = insertDependency(lockfile.Dependencies, d)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to insert dependency to lock dependencies")
 			}
 		}
 	}
 
-	return lock, nil
+	return lockfile, nil
 }
 
 func insertDependency(deps []spec.Dependency, newDep spec.Dependency) ([]spec.Dependency, error) {

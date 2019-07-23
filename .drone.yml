@@ -27,6 +27,7 @@ steps:
   commands:
   - make build
   - make test
+  - make test-integration
   environment:
     CGO_ENABLED: 0
     GO111MODULE: on

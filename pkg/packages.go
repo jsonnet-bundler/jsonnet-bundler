@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -42,23 +41,16 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create general tmp dir")
 		}
-		tmpDir, err := ioutil.TempDir(tmp, fmt.Sprintf("jsonnetpkg-%s-%s", dep.Name, dep.Version))
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create tmp dir")
-		}
-		defer os.RemoveAll(tmpDir)
 
-		subdir := ""
 		var p Interface
 		if dep.Source.GitSource != nil {
 			p = NewGitPackage(dep.Source.GitSource)
-			subdir = dep.Source.GitSource.Subdir
 		}
 		if dep.Source.LocalSource != nil {
 			p = NewLocalPackage(dep.Source.LocalSource)
 		}
 
-		lockVersion, err := p.Install(ctx, tmpDir, dep.Version)
+		lockVersion, err := p.Install(ctx, dep.Name, dir, dep.Version)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to install package")
 		}
@@ -66,20 +58,6 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 		color.Green(">>> Installed %s version %s\n", dep.Name, dep.Version)
 
 		destPath := path.Join(dir, dep.Name)
-
-		err = os.MkdirAll(path.Dir(destPath), os.ModePerm)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create parent path")
-		}
-
-		err = os.RemoveAll(destPath)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to clean previous destination path")
-		}
-		err = os.Rename(path.Join(tmpDir, subdir), destPath)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to move package")
-		}
 
 		lockfile.Dependencies, err = insertDependency(lockfile.Dependencies, spec.Dependency{
 			Name:      dep.Name,

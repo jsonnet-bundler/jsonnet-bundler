@@ -17,12 +17,16 @@ package pkg
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/pkg/errors"
 )
 
 type GitPackage struct {
@@ -35,8 +39,16 @@ func NewGitPackage(source *spec.GitSource) Interface {
 	}
 }
 
-func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVersion string, err error) {
-	cmd := exec.CommandContext(ctx, "git", "clone", p.Source.Remote, dir)
+func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (string, error) {
+	destPath := path.Join(dir, name)
+
+	tmpDir, err := ioutil.TempDir(filepath.Join(dir, ".tmp"), fmt.Sprintf("jsonnetpkg-%s-%s", name, version))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create tmp dir")
+	}
+	defer os.RemoveAll(tmpDir)
+
+	cmd := exec.CommandContext(ctx, "git", "clone", p.Source.Remote, tmpDir)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -49,7 +61,7 @@ func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVers
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Dir = dir
+	cmd.Dir = tmpDir
 	err = cmd.Run()
 	if err != nil {
 		return "", err
@@ -58,7 +70,7 @@ func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVers
 	b := bytes.NewBuffer(nil)
 	cmd = exec.CommandContext(ctx, "git", "rev-parse", "HEAD")
 	cmd.Stdout = b
-	cmd.Dir = dir
+	cmd.Dir = tmpDir
 	err = cmd.Run()
 	if err != nil {
 		return "", err
@@ -66,9 +78,24 @@ func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVers
 
 	commitHash := strings.TrimSpace(b.String())
 
-	err = os.RemoveAll(path.Join(dir, ".git"))
+	err = os.RemoveAll(path.Join(tmpDir, ".git"))
 	if err != nil {
 		return "", err
+	}
+
+	err = os.MkdirAll(path.Dir(destPath), os.ModePerm)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create parent path")
+	}
+
+	err = os.RemoveAll(destPath)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to clean previous destination path")
+	}
+
+	err = os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to move package")
 	}
 
 	return commitHash, nil

@@ -17,6 +17,8 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 )
@@ -31,12 +33,16 @@ func NewLocalPackage(source *spec.LocalSource) Interface {
 	}
 }
 
-func (p *LocalPackage) Install(ctx context.Context, dir, version string) (lockVersion string, err error) {
-	fmt.Println("SYMLINK THIS SHIT, HAHA")
+func (p *LocalPackage) Install(ctx context.Context, name, dir, version string) (lockVersion string, err error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current working directory: %v", err)
+	}
 
-	// TODO: Where do I get the name of the package?
-
-	fmt.Println(ctx, dir, version)
+	err = os.Symlink(filepath.Join(wd, p.Source.Directory), filepath.Join(wd, dir, name))
+	if err != nil {
+		return "", fmt.Errorf("failed to create symlink for local dependency: %v", err)
+	}
 
 	return "", nil
 }

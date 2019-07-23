@@ -19,5 +19,5 @@ import (
 )
 
 type Interface interface {
-	Install(ctx context.Context, dir, version string) (lockVersion string, err error)
+	Install(ctx context.Context, name, dir, version string) (lockVersion string, err error)
 }

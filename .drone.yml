@@ -26,6 +26,7 @@ steps:
   image: golang:1.12
   commands:
   - make build
+  - make test
   - make test-integration
   environment:
     CGO_ENABLED: 0

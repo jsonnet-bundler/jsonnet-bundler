@@ -38,6 +38,7 @@
       name: 'build',
       commands: [
         'make build',
+        'make test',
         'make test-integration',
       ],
     },

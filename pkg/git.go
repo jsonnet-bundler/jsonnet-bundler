@@ -45,7 +45,7 @@ func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVers
 		return "", err
 	}
 
-	cmd = exec.CommandContext(ctx, "git", "checkout", version)
+	cmd = exec.CommandContext(ctx, "git", "-c", "advice.detachedHead=false", "checkout", version)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

@@ -36,7 +36,7 @@ func NewGitPackage(source *spec.GitSource) Interface {
 }
 
 func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVersion string, err error) {
-	cmd := exec.CommandContext(ctx, "git", "clone", p.Source.Remote, dir)
+	cmd := exec.CommandContext(ctx, "git", "clone", "-n", p.Source.Remote, dir)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

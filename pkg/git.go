@@ -17,6 +17,7 @@ package pkg
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -43,6 +44,20 @@ func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVers
 	err = cmd.Run()
 	if err != nil {
 		return "", err
+	}
+
+	if p.Source.Subdir != "" {
+		cmd = exec.CommandContext(ctx, "git", "config", "core.sparsecheckout", "true")
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Dir = dir
+		err = cmd.Run()
+		if err != nil {
+			return "", err
+		}	
+		glob := []byte(p.Source.Subdir + "/*\n")
+		ioutil.WriteFile(dir + "/.git/info/sparse-checkout", glob, 0644)
 	}
 
 	cmd = exec.CommandContext(ctx, "git", "-c", "advice.detachedHead=false", "checkout", version)

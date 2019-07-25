@@ -37,15 +37,47 @@ func NewGitPackage(source *spec.GitSource) Interface {
 }
 
 func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVersion string, err error) {
-	cmd := exec.CommandContext(ctx, "git", "clone", "-n", p.Source.Remote, dir)
+	cmd := exec.CommandContext(ctx, "git", "init")
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Dir = dir
 	err = cmd.Run()
 	if err != nil {
 		return "", err
 	}
 
+	cmd = exec.CommandContext(ctx, "git", "remote", "add", "origin", p.Source.Remote)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Dir = dir
+	err = cmd.Run()
+	if err != nil {
+		return "", err
+	}
+
+	// Attempt shallow fetch at specific revision
+	cmd = exec.CommandContext(ctx, "git", "fetch", "--depth", "1", "origin", version)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Dir = dir
+	err = cmd.Run()
+	if err != nil {
+		// Fall back to normal fetch (all revisions)
+		cmd = exec.CommandContext(ctx, "git", "fetch", "origin")
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Dir = dir
+		err = cmd.Run()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// If a Subdir is specificied, a sparsecheckout is sufficient
 	if p.Source.Subdir != "" {
 		cmd = exec.CommandContext(ctx, "git", "config", "core.sparsecheckout", "true")
 		cmd.Stdin = os.Stdin
@@ -55,9 +87,9 @@ func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVers
 		err = cmd.Run()
 		if err != nil {
 			return "", err
-		}	
+		}
 		glob := []byte(p.Source.Subdir + "/*\n")
-		ioutil.WriteFile(dir + "/.git/info/sparse-checkout", glob, 0644)
+		ioutil.WriteFile(dir+"/.git/info/sparse-checkout", glob, 0644)
 	}
 
 	cmd = exec.CommandContext(ctx, "git", "-c", "advice.detachedHead=false", "checkout", version)

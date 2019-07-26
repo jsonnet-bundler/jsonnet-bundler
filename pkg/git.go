@@ -17,13 +17,17 @@ package pkg
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/fatih/color"
 )
 
 type GitPackage struct {
@@ -36,7 +40,49 @@ func NewGitPackage(source *spec.GitSource) Interface {
 	}
 }
 
+func DownloadFile(filepath string, url string) error {
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
 func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVersion string, err error) {
+	if strings.HasPrefix(p.Source.Remote, "https://github.com/") {
+		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", p.Source.Remote, version)
+		archiveFilepath := fmt.Sprintf("%s.tar.gz", dir)
+		err := DownloadFile(archiveFilepath, archiveUrl);
+		if err != nil {
+			return "", err;
+		}
+		color.Cyan("GET %s OK", archiveUrl);
+		cmd := exec.CommandContext(ctx, "tar", "xvf", archiveFilepath)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Run()
+		if err != nil {
+			return "", err
+		}
+		color.Cyan("Untar %s OK", archiveFilepath);
+		// TODO resolve git refs using GitHub API
+		commitHash := version
+		return commitHash, nil
+	}
+
 	cmd := exec.CommandContext(ctx, "git", "init")
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

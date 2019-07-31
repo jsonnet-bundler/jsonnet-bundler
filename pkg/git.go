@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -27,6 +28,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/fatih/color"
@@ -43,24 +45,40 @@ func NewGitPackage(source *spec.GitSource) Interface {
 	}
 }
 
-func DownloadFile(filepath string, url string) error {
+func downloadGitHubArchive(filepath string, url string) (string, error) {
 	// Get the data
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		return "", err
 	}
+	color.Cyan("GET %s %d", url, resp.StatusCode)
+
+	// GitHub conveniently uses the commit SHA1 at the ETag
+	// signature for the archive. This is needed when doing `jb update`
+	// to resolve a ref (ie. "master") to a commit SHA1 for the lock file
+	etagValue := resp.Header.Get(http.CanonicalHeaderKey("ETag"))
+	commitShaPattern, _ := regexp.Compile("^\"([0-9a-f]{40})\"$")
+	m := commitShaPattern.FindStringSubmatch(etagValue)
+	if len(m) < 2 {
+		return "", errors.New(fmt.Sprintf("unexpected etag format: %s", etagValue))
+	}
+	commitSha := m[1]
 	defer resp.Body.Close()
 
 	// Create the file
 	out, err := os.Create(filepath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer out.Close()
 
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
-	return err
+	if err != nil {
+		return "", err
+	}
+
+	return commitSha, nil
 }
 
 func gzipUntar(dst string, r io.Reader, subDir string) error {
@@ -135,17 +153,15 @@ func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVers
 	if strings.HasPrefix(p.Source.Remote, "https://github.com/") {
 		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", p.Source.Remote, version)
 		archiveFilepath := fmt.Sprintf("%s.tar.gz", dir)
-		err := DownloadFile(archiveFilepath, archiveUrl)
+
+		defer os.Remove(archiveFilepath)
+		commitSha, err := downloadGitHubArchive(archiveFilepath, archiveUrl)
 		if err != nil {
 			return "", err
 		}
-		color.Cyan("GET %s OK", archiveUrl)
 		r, err := os.Open(archiveFilepath)
 		err = gzipUntar(dir, r, p.Source.Subdir)
-
-		// TODO resolve git refs using GitHub API
-		commitHash := version
-		return commitHash, nil
+		return commitSha, nil
 	}
 
 	cmd := exec.CommandContext(ctx, "git", "init")

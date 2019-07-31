@@ -15,7 +15,9 @@
 package pkg
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -24,10 +26,11 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/fatih/color"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 )
 
 type GitPackage struct {
@@ -60,24 +63,86 @@ func DownloadFile(filepath string, url string) error {
 	return err
 }
 
+func gzipUntar(dst string, r io.Reader, subDir string) error {
+	gzr, err := gzip.NewReader(r)
+	if err != nil {
+		return err
+	}
+	defer gzr.Close()
+
+	tr := tar.NewReader(gzr)
+
+	for {
+		header, err := tr.Next()
+		switch {
+		case err == io.EOF:
+			return nil
+
+		case err != nil:
+			return err
+
+		case header == nil:
+			continue
+		}
+
+		// strip the two first components of the path
+		parts := strings.SplitAfterN(header.Name, "/", 2)
+		if len(parts) < 2 {
+			continue
+		}
+		suffix := parts[1]
+		prefix := dst
+
+		// reconstruct the target parh for the archive entry
+		target := filepath.Join(prefix, suffix)
+
+		// if subdir is provided and target is not under it, skip it
+		subDirPath := filepath.Join(prefix, subDir)
+		if subDir != "" && !strings.HasPrefix(target, subDirPath) {
+			continue
+		}
+
+		// check the file type
+		switch header.Typeflag {
+
+		// create directories as needed
+		case tar.TypeDir:
+			if _, err := os.Stat(target); err != nil {
+				if err := os.MkdirAll(target, 0755); err != nil {
+					return err
+				}
+			}
+
+		case tar.TypeReg:
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+
+			// copy over contents
+			if _, err := io.Copy(f, tr); err != nil {
+				return err
+			}
+			f.Close()
+		}
+	}
+}
+
 func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVersion string, err error) {
+	// Optimization for GitHub sources: download a tarball archive of the requested
+	// version instead of cloning the entire repository. Resolves the version to a
+	// commit SHA using the GitHub API.
 	if strings.HasPrefix(p.Source.Remote, "https://github.com/") {
 		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", p.Source.Remote, version)
 		archiveFilepath := fmt.Sprintf("%s.tar.gz", dir)
-		err := DownloadFile(archiveFilepath, archiveUrl);
-		if err != nil {
-			return "", err;
-		}
-		color.Cyan("GET %s OK", archiveUrl);
-		cmd := exec.CommandContext(ctx, "tar", "xvf", archiveFilepath)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
+		err := DownloadFile(archiveFilepath, archiveUrl)
 		if err != nil {
 			return "", err
 		}
-		color.Cyan("Untar %s OK", archiveFilepath);
+		color.Cyan("GET %s OK", archiveUrl)
+		r, err := os.Open(archiveFilepath)
+		err = gzipUntar(dir, r, p.Source.Subdir)
+
 		// TODO resolve git refs using GitHub API
 		commitHash := version
 		return commitHash, nil
@@ -123,7 +188,8 @@ func (p *GitPackage) Install(ctx context.Context, dir, version string) (lockVers
 		}
 	}
 
-	// If a Subdir is specificied, a sparsecheckout is sufficient
+	// Sparse checkout optimization: if a Subdir is specificied,
+	// there is no need to do a full checkout
 	if p.Source.Subdir != "" {
 		cmd = exec.CommandContext(ctx, "git", "config", "core.sparsecheckout", "true")
 		cmd.Stdin = os.Stdin

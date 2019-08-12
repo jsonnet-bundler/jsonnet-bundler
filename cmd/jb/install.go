@@ -46,7 +46,7 @@ func installCommand(dir, jsonnetHome string, paths ...string) int {
 
 	if len(paths) > 0 {
 		for _, path := range paths {
-			newDep := parseDependency(path)
+			newDep := parseDependency(dir, path)
 			if newDep == nil {
 				kingpin.Errorf("ignoring unrecognized path: %s", path)
 				continue

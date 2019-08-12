@@ -49,8 +49,8 @@ func TestInstallCommand(t *testing.T) {
 			Name:                    "Relative",
 			URLs:                    []string{"test/jsonnet/foobar"},
 			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"dependencies":null}`),
-			ExpectedJsonnetLockFile: []byte(`{"dependencies":null}`),
+			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "test/jsonnet/foobar"}}, "version": ""}]}`),
+			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "test/jsonnet/foobar"}}, "version": ""}]}`),
 		},
 	}
 
@@ -81,6 +81,8 @@ func TestInstallCommand(t *testing.T) {
 }
 
 func jsonnetFileContent(t *testing.T, filename string, content []byte) {
+	t.Helper()
+
 	bytes, err := ioutil.ReadFile(filename)
 	assert.NoError(t, err)
 	if eq := assert.JSONEq(t, string(content), string(bytes)); !eq {

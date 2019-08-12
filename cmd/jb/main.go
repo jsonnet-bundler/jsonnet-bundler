@@ -93,7 +93,7 @@ func Main() int {
 	return 0
 }
 
-func parseDependency(path string) *spec.Dependency {
+func parseDependency(dir, path string) *spec.Dependency {
 	if d := parseGitSSHDependency(path); d != nil {
 		return d
 	}
@@ -102,7 +102,7 @@ func parseDependency(path string) *spec.Dependency {
 		return d
 	}
 
-	if d := parseLocalDependency(path); d != nil {
+	if d := parseLocalDependency(dir, path); d != nil {
 		return d
 	}
 
@@ -211,7 +211,7 @@ func parseGithubDependency(p string) *spec.Dependency {
 	}
 }
 
-func parseLocalDependency(p string) *spec.Dependency {
+func parseLocalDependency(dir, p string) *spec.Dependency {
 	if p == "" {
 		return nil
 	}
@@ -223,8 +223,9 @@ func parseLocalDependency(p string) *spec.Dependency {
 	}
 
 	clean := filepath.Clean(p)
+	abs := filepath.Join(dir, clean)
 
-	info, err := os.Stat(clean)
+	info, err := os.Stat(abs)
 	if err != nil {
 		return nil
 	}

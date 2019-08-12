@@ -89,7 +89,7 @@ func TestParseDependency(t *testing.T) {
 	}
 	for _, tt := range tests {
 		_ = t.Run(tt.name, func(t *testing.T) {
-			dependency := parseDependency(tt.path)
+			dependency := parseDependency("", tt.path)
 
 			if tt.path == "" {
 				assert.Nil(t, dependency)

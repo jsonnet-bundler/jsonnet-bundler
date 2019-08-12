@@ -95,7 +95,7 @@ Commands:
   init
     Initialize a new empty jsonnetfile
 
-  install [<paths>...]
+  install [<uris>...]
     Install all dependencies or install specific ones
 
   update

@@ -29,7 +29,7 @@ import (
 func TestInstallCommand(t *testing.T) {
 	testcases := []struct {
 		Name                    string
-		URLs                    []string
+		URIs                    []string
 		ExpectedCode            int
 		ExpectedJsonnetFile     []byte
 		ExpectedJsonnetLockFile []byte
@@ -41,13 +41,13 @@ func TestInstallCommand(t *testing.T) {
 			ExpectedJsonnetLockFile: []byte(`{"dependencies":null}`),
 		}, {
 			Name:                    "OneURL",
-			URLs:                    []string{"github.com/jsonnet-bundler/jsonnet-bundler@v0.1.0"},
+			URIs:                    []string{"github.com/jsonnet-bundler/jsonnet-bundler@v0.1.0"},
 			ExpectedCode:            0,
 			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}]}`),
 			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f"}]}`),
 		}, {
 			Name:                    "Relative",
-			URLs:                    []string{"test/jsonnet/foobar"},
+			URIs:                    []string{"test/jsonnet/foobar"},
 			ExpectedCode:            0,
 			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "test/jsonnet/foobar"}}, "version": ""}]}`),
 			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "test/jsonnet/foobar"}}, "version": ""}]}`),
@@ -71,7 +71,7 @@ func TestInstallCommand(t *testing.T) {
 
 			jsonnetFileContent(t, jsonnetFile, []byte(`{}`))
 
-			code = installCommand(tempDir, "vendor", tc.URLs...)
+			code = installCommand(tempDir, "vendor", tc.URIs...)
 			assert.Equal(t, tc.ExpectedCode, code)
 
 			jsonnetFileContent(t, jsonnetFile, tc.ExpectedJsonnetFile)

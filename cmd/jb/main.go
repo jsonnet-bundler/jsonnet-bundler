@@ -63,7 +63,7 @@ func Main() int {
 	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
 
 	installCmd := a.Command(installActionName, "Install all dependencies or install specific ones")
-	installCmdPaths := installCmd.Arg("paths", "paths to packages to install, URLs or file paths").Strings()
+	installCmdURIs := installCmd.Arg("uris", "URIs to packages to install, URLs or file paths").Strings()
 
 	updateCmd := a.Command(updateActionName, "Update all dependencies.")
 
@@ -83,7 +83,7 @@ func Main() int {
 	case initCmd.FullCommand():
 		return initCommand(workdir)
 	case installCmd.FullCommand():
-		return installCommand(workdir, cfg.JsonnetHome, *installCmdPaths...)
+		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs...)
 	case updateCmd.FullCommand():
 		return updateCommand(cfg.JsonnetHome)
 	default:
@@ -93,16 +93,16 @@ func Main() int {
 	return 0
 }
 
-func parseDependency(dir, path string) *spec.Dependency {
-	if d := parseGitSSHDependency(path); d != nil {
+func parseDependency(dir, uri string) *spec.Dependency {
+	if d := parseGitSSHDependency(uri); d != nil {
 		return d
 	}
 
-	if d := parseGithubDependency(path); d != nil {
+	if d := parseGithubDependency(uri); d != nil {
 		return d
 	}
 
-	if d := parseLocalDependency(dir, path); d != nil {
+	if d := parseLocalDependency(dir, uri); d != nil {
 		return d
 	}
 

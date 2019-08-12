@@ -27,7 +27,7 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-func installCommand(dir, jsonnetHome string, paths ...string) int {
+func installCommand(dir, jsonnetHome string, uris ...string) int {
 	if dir == "" {
 		dir = "."
 	}
@@ -44,11 +44,11 @@ func installCommand(dir, jsonnetHome string, paths ...string) int {
 		return 1
 	}
 
-	if len(paths) > 0 {
-		for _, path := range paths {
-			newDep := parseDependency(dir, path)
+	if len(uris) > 0 {
+		for _, uri := range uris {
+			newDep := parseDependency(dir, uri)
 			if newDep == nil {
-				kingpin.Errorf("ignoring unrecognized path: %s", path)
+				kingpin.Errorf("ignoring unrecognized uri: %s", uri)
 				continue
 			}
 

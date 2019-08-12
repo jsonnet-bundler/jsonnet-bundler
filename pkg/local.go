@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/pkg/errors"
 )
 
 type LocalPackage struct {
@@ -39,7 +40,14 @@ func (p *LocalPackage) Install(ctx context.Context, name, dir, version string) (
 		return "", fmt.Errorf("failed to get current working directory: %v", err)
 	}
 
-	err = os.Symlink(filepath.Join(wd, p.Source.Directory), filepath.Join(wd, dir, name))
+	destPath := filepath.Join(dir, name)
+
+	err = os.RemoveAll(destPath)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to clean previous destination path")
+	}
+
+	err = os.Symlink(filepath.Join(wd, p.Source.Directory), filepath.Join(wd, destPath))
 	if err != nil {
 		return "", fmt.Errorf("failed to create symlink for local dependency: %v", err)
 	}

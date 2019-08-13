@@ -15,17 +15,13 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/pkg/errors"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -35,15 +31,9 @@ const (
 	installActionName = "install"
 	updateActionName  = "update"
 	initActionName    = "init"
-	basePath          = ".jsonnetpkg"
-	srcDirName        = "src"
 )
 
 var (
-	availableSubcommands = []string{
-		initActionName,
-		installActionName,
-	}
 	gitSSHRegex                   = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git")
 	gitSSHWithVersionRegex        = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git@(.*)")
 	gitSSHWithPathRegex           = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)")
@@ -73,7 +63,7 @@ func Main() int {
 	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
 
 	installCmd := a.Command(installActionName, "Install all dependencies or install specific ones")
-	installCmdURLs := installCmd.Arg("packages", "URLs to package to install").URLList()
+	installCmdURIs := installCmd.Arg("uris", "URIs to packages to install, URLs or file paths").Strings()
 
 	updateCmd := a.Command(updateActionName, "Update all dependencies.")
 
@@ -93,7 +83,7 @@ func Main() int {
 	case initCmd.FullCommand():
 		return initCommand(workdir)
 	case installCmd.FullCommand():
-		return installCommand(workdir, cfg.JsonnetHome, *installCmdURLs...)
+		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs...)
 	case updateCmd.FullCommand():
 		return updateCommand(cfg.JsonnetHome)
 	default:
@@ -103,20 +93,24 @@ func Main() int {
 	return 0
 }
 
-func parseDepedency(urlString string) *spec.Dependency {
-	if spec := parseGitSSHDependency(urlString); spec != nil {
-		return spec
+func parseDependency(dir, uri string) *spec.Dependency {
+	if d := parseGitSSHDependency(uri); d != nil {
+		return d
 	}
 
-	if spec := parseGithubDependency(urlString); spec != nil {
-		return spec
+	if d := parseGithubDependency(uri); d != nil {
+		return d
+	}
+
+	if d := parseLocalDependency(dir, uri); d != nil {
+		return d
 	}
 
 	return nil
 }
 
-func parseGitSSHDependency(urlString string) *spec.Dependency {
-	if !gitSSHRegex.MatchString(urlString) {
+func parseGitSSHDependency(p string) *spec.Dependency {
+	if !gitSSHRegex.MatchString(p) {
 		return nil
 	}
 
@@ -126,27 +120,27 @@ func parseGitSSHDependency(urlString string) *spec.Dependency {
 	repo := ""
 	version := "master"
 
-	if gitSSHWithPathAndVersionRegex.MatchString(urlString) {
-		matches := gitSSHWithPathAndVersionRegex.FindStringSubmatch(urlString)
+	if gitSSHWithPathAndVersionRegex.MatchString(p) {
+		matches := gitSSHWithPathAndVersionRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
 		repo = matches[3]
 		subdir = matches[4]
 		version = matches[5]
-	} else if gitSSHWithPathRegex.MatchString(urlString) {
-		matches := gitSSHWithPathRegex.FindStringSubmatch(urlString)
+	} else if gitSSHWithPathRegex.MatchString(p) {
+		matches := gitSSHWithPathRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
 		repo = matches[3]
 		subdir = matches[4]
-	} else if gitSSHWithVersionRegex.MatchString(urlString) {
-		matches := gitSSHWithVersionRegex.FindStringSubmatch(urlString)
+	} else if gitSSHWithVersionRegex.MatchString(p) {
+		matches := gitSSHWithVersionRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
 		repo = matches[3]
 		version = matches[4]
 	} else {
-		matches := gitSSHRegex.FindStringSubmatch(urlString)
+		matches := gitSSHRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
 		repo = matches[3]
@@ -164,8 +158,8 @@ func parseGitSSHDependency(urlString string) *spec.Dependency {
 	}
 }
 
-func parseGithubDependency(urlString string) *spec.Dependency {
-	if !githubSlugRegex.MatchString(urlString) {
+func parseGithubDependency(p string) *spec.Dependency {
+	if !githubSlugRegex.MatchString(p) {
 		return nil
 	}
 
@@ -175,30 +169,30 @@ func parseGithubDependency(urlString string) *spec.Dependency {
 	subdir := ""
 	version := "master"
 
-	if githubSlugWithPathRegex.MatchString(urlString) {
-		if githubSlugWithPathAndVersionRegex.MatchString(urlString) {
-			matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(urlString)
+	if githubSlugWithPathRegex.MatchString(p) {
+		if githubSlugWithPathAndVersionRegex.MatchString(p) {
+			matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(p)
 			user = matches[1]
 			repo = matches[2]
 			subdir = matches[3]
 			version = matches[4]
 			name = path.Base(subdir)
 		} else {
-			matches := githubSlugWithPathRegex.FindStringSubmatch(urlString)
+			matches := githubSlugWithPathRegex.FindStringSubmatch(p)
 			user = matches[1]
 			repo = matches[2]
 			subdir = matches[3]
 			name = path.Base(subdir)
 		}
 	} else {
-		if githubSlugWithVersionRegex.MatchString(urlString) {
-			matches := githubSlugWithVersionRegex.FindStringSubmatch(urlString)
+		if githubSlugWithVersionRegex.MatchString(p) {
+			matches := githubSlugWithVersionRegex.FindStringSubmatch(p)
 			user = matches[1]
 			repo = matches[2]
 			name = repo
 			version = matches[3]
 		} else {
-			matches := githubSlugRegex.FindStringSubmatch(urlString)
+			matches := githubSlugRegex.FindStringSubmatch(p)
 			user = matches[1]
 			repo = matches[2]
 			name = repo
@@ -217,41 +211,36 @@ func parseGithubDependency(urlString string) *spec.Dependency {
 	}
 }
 
-func updateCommand(jsonnetHome string, urls ...*url.URL) int {
-	jsonnetfile := pkg.JsonnetFile
-
-	m, err := pkg.LoadJsonnetfile(jsonnetfile)
-	if err != nil {
-		kingpin.Fatalf("failed to load jsonnetfile: %v", err)
-		return 1
+func parseLocalDependency(dir, p string) *spec.Dependency {
+	if p == "" {
+		return nil
+	}
+	if strings.HasPrefix(p, "github.com") {
+		return nil
+	}
+	if strings.HasPrefix(p, "git+ssh") {
+		return nil
 	}
 
-	err = os.MkdirAll(jsonnetHome, os.ModePerm)
+	clean := filepath.Clean(p)
+	abs := filepath.Join(dir, clean)
+
+	info, err := os.Stat(abs)
 	if err != nil {
-		kingpin.Fatalf("failed to create jsonnet home path: %v", err)
-		return 3
+		return nil
 	}
 
-	// When updating, the lockfile is explicitly ignored.
-	isLock := false
-	lock, err := pkg.Install(context.TODO(), isLock, jsonnetfile, m, jsonnetHome)
-	if err != nil {
-		kingpin.Fatalf("failed to install: %v", err)
-		return 3
+	if !info.IsDir() {
+		return nil
 	}
 
-	b, err := json.MarshalIndent(lock, "", "    ")
-	if err != nil {
-		kingpin.Fatalf("failed to encode jsonnet file: %v", err)
-		return 3
+	return &spec.Dependency{
+		Name: info.Name(),
+		Source: spec.Source{
+			LocalSource: &spec.LocalSource{
+				Directory: clean,
+			},
+		},
+		Version: "",
 	}
-	b = append(b, []byte("\n")...)
-
-	err = ioutil.WriteFile(pkg.JsonnetLockFile, b, 0644)
-	if err != nil {
-		kingpin.Fatalf("failed to write lock file: %v", err)
-		return 3
-	}
-
-	return 0
 }

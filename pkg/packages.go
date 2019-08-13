@@ -18,19 +18,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/fatih/color"
+	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/pkg/errors"
 )
 
 var (
-	JsonnetFile     = "jsonnetfile.json"
-	JsonnetLockFile = "jsonnetfile.lock.json"
 	VersionMismatch = errors.New("multiple colliding versions specified")
 )
 
@@ -43,20 +41,16 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create general tmp dir")
 		}
-		tmpDir, err := ioutil.TempDir(tmp, fmt.Sprintf("jsonnetpkg-%s-%s", dep.Name, dep.Version))
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create tmp dir")
-		}
-		defer os.RemoveAll(tmpDir)
 
-		subdir := ""
 		var p Interface
 		if dep.Source.GitSource != nil {
 			p = NewGitPackage(dep.Source.GitSource)
-			subdir = dep.Source.GitSource.Subdir
+		}
+		if dep.Source.LocalSource != nil {
+			p = NewLocalPackage(dep.Source.LocalSource)
 		}
 
-		lockVersion, err := p.Install(ctx, tmpDir, dep.Version)
+		lockVersion, err := p.Install(ctx, dep.Name, dir, dep.Version)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to install package")
 		}
@@ -64,20 +58,6 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 		color.Green(">>> Installed %s version %s\n", dep.Name, dep.Version)
 
 		destPath := path.Join(dir, dep.Name)
-
-		err = os.MkdirAll(path.Dir(destPath), os.ModePerm)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create parent path")
-		}
-
-		err = os.RemoveAll(destPath)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to clean previous destination path")
-		}
-		err = os.Rename(path.Join(tmpDir, subdir), destPath)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to move package")
-		}
 
 		lockfile.Dependencies, err = insertDependency(lockfile.Dependencies, spec.Dependency{
 			Name:      dep.Name,
@@ -101,7 +81,7 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 			return nil, err
 		}
 		depsDeps, err := LoadJsonnetfile(filepath)
-		// It is ok for depedencies not to have a JsonnetFile, it just means
+		// It is ok for dependencies not to have a JsonnetFile, it just means
 		// they do not have transitive dependencies of their own.
 		if err != nil && !os.IsNotExist(err) {
 			return nil, err
@@ -161,18 +141,18 @@ func FileExists(path string) (bool, error) {
 }
 
 func ChooseJsonnetFile(dir string) (string, bool, error) {
-	lockfile := path.Join(dir, JsonnetLockFile)
-	jsonnetfile := path.Join(dir, JsonnetFile)
-	filename := lockfile
+	lockfilePath := path.Join(dir, jsonnetfile.LockFile)
+	jsonnetfilePath := path.Join(dir, jsonnetfile.File)
+	filename := lockfilePath
 	isLock := true
 
-	lockExists, err := FileExists(filepath.Join(dir, JsonnetLockFile))
+	lockExists, err := FileExists(filepath.Join(dir, jsonnetfile.LockFile))
 	if err != nil {
 		return "", false, err
 	}
 
 	if !lockExists {
-		filename = jsonnetfile
+		filename = jsonnetfilePath
 		isLock = false
 	}
 

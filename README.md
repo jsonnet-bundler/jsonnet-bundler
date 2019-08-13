@@ -104,3 +104,6 @@ Commands:
 
 ```
 
+## Design
+
+This is an implemention of the design specified in this document: https://docs.google.com/document/d/1czRScSvvOiAJaIjwf3CogOULgQxhY9MkiBKOQI1yR14/edit#heading=h.upn4d5pcxy4c

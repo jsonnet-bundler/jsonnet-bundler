@@ -171,7 +171,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	// the ETag header included in the response.
 	isGitHubRemote, err := regexp.MatchString(`^(https|ssh)://github\.com/.+$`, p.Source.Remote)
 	if isGitHubRemote {
-		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gzz", p.Source.Remote, version)
+		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", p.Source.Remote, version)
 		archiveFilepath := fmt.Sprintf("%s.tar.gz", tmpDir)
 
 		defer os.Remove(archiveFilepath)

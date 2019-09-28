@@ -126,7 +126,7 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 		// create directories as needed
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, 0755); err != nil {
+				if err := os.MkdirAll(target, os.FileMode(header.Mode)); err != nil {
 					return err
 				}
 			}

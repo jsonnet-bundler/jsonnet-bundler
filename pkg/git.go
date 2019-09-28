@@ -212,7 +212,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		}
 	}
 
-	// Sparse checkout optimization: if a Subdir is specificied,
+	// Sparse checkout optimization: if a Subdir is specified,
 	// there is no need to do a full checkout
 	if p.Source.Subdir != "" {
 		cmd = exec.CommandContext(ctx, "git", "config", "core.sparsecheckout", "true")
@@ -224,8 +224,12 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		if err != nil {
 			return "", err
 		}
+
 		glob := []byte(p.Source.Subdir + "/*\n")
-		ioutil.WriteFile(tmpDir+"/.git/info/sparse-checkout", glob, 0644)
+		err = ioutil.WriteFile(filepath.Join(tmpDir, ".git", "info", "sparse-checkout"), glob, 0644)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	cmd = exec.CommandContext(ctx, "git", "-c", "advice.detachedHead=false", "checkout", version)

@@ -167,30 +167,31 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	defer os.RemoveAll(tmpDir)
 
 	// Optimization for GitHub sources: download a tarball archive of the requested
-	// version instead of cloning the entire repository. Resolves the version to a
-	// commit SHA using the GitHub API.
+	// version instead of cloning the entire repository. The SHA1 is discovered through
+	// the ETag header included in the response.
 	isGitHubRemote, err := regexp.MatchString(`^(https|ssh)://github\.com/.+$`, p.Source.Remote)
 	if isGitHubRemote {
-		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", p.Source.Remote, version)
+		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gzz", p.Source.Remote, version)
 		archiveFilepath := fmt.Sprintf("%s.tar.gz", tmpDir)
 
 		defer os.Remove(archiveFilepath)
 		commitSha, err := downloadGitHubArchive(archiveFilepath, archiveUrl)
-		if err != nil {
-			return "", err
+		if err == nil {
+			r, err := os.Open(archiveFilepath)
+			defer r.Close()
+			if err == nil {
+				err = gzipUntar(tmpDir, r, p.Source.Subdir)
+			}
 		}
 
-		r, err := os.Open(archiveFilepath)
-		if err != nil {
-			return "", err
+		if err == nil {
+			return commitSha, nil
 		}
 
-		err = gzipUntar(tmpDir, r, p.Source.Subdir)
-		if err != nil {
-			return "", err
-		}
-
-		return commitSha, nil
+		// The repository may be private or the archive download may not work
+		// for other reasons. In any case, fall back to the slower git-based installation.
+		color.Yellow("archive install failed: %s", err)
+		color.Yellow("retrying with git...")
 	}
 
 	cmd := exec.CommandContext(ctx, "git", "init")

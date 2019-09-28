@@ -162,7 +162,8 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	// Optimization for GitHub sources: download a tarball archive of the requested
 	// version instead of cloning the entire repository. Resolves the version to a
 	// commit SHA using the GitHub API.
-	if strings.HasPrefix(p.Source.Remote, "https://github.com/") {
+	isGitHubRemote, err := regexp.MatchString(`^(https|ssh)://github\.com/.+$`, p.Source.Remote)
+	if isGitHubRemote {
 		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", p.Source.Remote, version)
 		archiveFilepath := fmt.Sprintf("%s.tar.gz", tmpDir)
 

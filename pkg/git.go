@@ -171,8 +171,17 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		if err != nil {
 			return "", err
 		}
+
 		r, err := os.Open(archiveFilepath)
+		if err != nil {
+			return "", err
+		}
+
 		err = gzipUntar(tmpDir, r, p.Source.Subdir)
+		if err != nil {
+			return "", err
+		}
+
 		return commitSha, nil
 	}
 

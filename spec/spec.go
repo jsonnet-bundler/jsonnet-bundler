@@ -18,8 +18,16 @@ type JsonnetFile struct {
 	Dependencies []Dependency `json:"dependencies"`
 }
 
+type Dependency struct {
+	Name      string `json:"name"`
+	Source    Source `json:"source"`
+	Version   string `json:"version"`
+	DepSource string `json:"-"`
+}
+
 type Source struct {
-	GitSource *GitSource `json:"git"`
+	GitSource   *GitSource   `json:"git,omitempty"`
+	LocalSource *LocalSource `json:"local,omitempty"`
 }
 
 type GitSource struct {
@@ -27,9 +35,6 @@ type GitSource struct {
 	Subdir string `json:"subdir"`
 }
 
-type Dependency struct {
-	Name      string `json:"name"`
-	Source    Source `json:"source"`
-	Version   string `json:"version"`
-	DepSource string `json:"-"`
+type LocalSource struct {
+	Directory string `json:"directory"`
 }

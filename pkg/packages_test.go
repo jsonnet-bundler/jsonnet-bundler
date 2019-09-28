@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/stretchr/testify/assert"
 )
@@ -110,7 +111,7 @@ func TestLoadJsonnetfile(t *testing.T) {
 			assert.Nil(t, err)
 		}()
 
-		tempFile := filepath.Join(tempDir, JsonnetFile)
+		tempFile := filepath.Join(tempDir, jsonnetfile.File)
 		err = ioutil.WriteFile(tempFile, []byte(`{}`), os.ModePerm)
 		assert.Nil(t, err)
 
@@ -128,7 +129,7 @@ func TestLoadJsonnetfile(t *testing.T) {
 			assert.Nil(t, err)
 		}()
 
-		tempFile := filepath.Join(tempDir, JsonnetFile)
+		tempFile := filepath.Join(tempDir, jsonnetfile.File)
 		err = ioutil.WriteFile(tempFile, []byte(jsonnetfileContent), os.ModePerm)
 		assert.Nil(t, err)
 

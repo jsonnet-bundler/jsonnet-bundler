@@ -141,6 +141,10 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 			if _, err := io.Copy(f, tr); err != nil {
 				return err
 			}
+
+			// Explicitly release the file handle inside the inner loop
+			// Using defer would accumulate an unbounded quantity of
+			// handles and release them all at once at function end.
 			f.Close()
 		}
 	}

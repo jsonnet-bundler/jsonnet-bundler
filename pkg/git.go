@@ -180,7 +180,14 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 			r, err := os.Open(archiveFilepath)
 			defer r.Close()
 			if err == nil {
+				// Extract the sub-directory (if any) from the archive
+				// If none specified, the entire archive is unpacked
 				err = gzipUntar(tmpDir, r, p.Source.Subdir)
+
+				// Move the extracted directory to its final destination
+				if err == nil {
+					err = os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath)
+				}
 			}
 		}
 

@@ -56,17 +56,18 @@ func TestInstallCommand(t *testing.T) {
 	localDependency := "jsonnet/foobar"
 
 	cleanup := func() {
-		os.Remove(jsonnetfile.File)
-		os.Remove(jsonnetfile.LockFile)
-		os.RemoveAll("vendor")
-		os.RemoveAll("jsonnet")
+		_ = os.Remove(jsonnetfile.File)
+		_ = os.Remove(jsonnetfile.LockFile)
+		_ = os.RemoveAll("vendor")
+		_ = os.RemoveAll("jsonnet")
 	}
 
 	for _, tc := range testcases {
 		_ = t.Run(tc.Name, func(t *testing.T) {
 			cleanup()
 
-			os.MkdirAll(localDependency, os.ModePerm)
+			err := os.MkdirAll(localDependency, os.ModePerm)
+			assert.NoError(t, err)
 
 			initCommand("")
 

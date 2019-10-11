@@ -9,7 +9,7 @@ platform:
 steps:
 - name: gomod
   pull: always
-  image: golang:1.12
+  image: golang:1.13
   commands:
   - go mod vendor
   - git diff --exit-code
@@ -23,7 +23,7 @@ steps:
 
 - name: build
   pull: always
-  image: golang:1.12
+  image: golang:1.13
   commands:
   - make build
   - make test
@@ -38,7 +38,7 @@ steps:
 
 - name: generate
   pull: always
-  image: golang:1.12
+  image: golang:1.13
   commands:
   - make check-license
   - make generate

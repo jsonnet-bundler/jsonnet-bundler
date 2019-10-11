@@ -19,7 +19,6 @@ package main
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
@@ -47,37 +46,41 @@ func TestInstallCommand(t *testing.T) {
 			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f"}]}`),
 		}, {
 			Name:                    "Relative",
-			URIs:                    []string{"test/jsonnet/foobar"},
+			URIs:                    []string{"jsonnet/foobar"},
 			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "test/jsonnet/foobar"}}, "version": ""}]}`),
-			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "test/jsonnet/foobar"}}, "version": ""}]}`),
+			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}]}`),
+			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}]}`),
 		},
+	}
+
+	localDependency := "jsonnet/foobar"
+
+	cleanup := func() {
+		_ = os.Remove(jsonnetfile.File)
+		_ = os.Remove(jsonnetfile.LockFile)
+		_ = os.RemoveAll("vendor")
+		_ = os.RemoveAll("jsonnet")
 	}
 
 	for _, tc := range testcases {
 		_ = t.Run(tc.Name, func(t *testing.T) {
-			tempDir, err := ioutil.TempDir("", "jb-install")
+			cleanup()
+
+			err := os.MkdirAll(localDependency, os.ModePerm)
 			assert.NoError(t, err)
-			err = os.MkdirAll(filepath.Join(tempDir, "test/jsonnet/foobar"), os.ModePerm)
-			assert.NoError(t, err)
-			defer os.Remove(tempDir)
-			defer os.RemoveAll("vendor") // cloning jsonnet-bundler will create this folder
 
-			jsonnetFile := filepath.Join(tempDir, jsonnetfile.File)
-			jsonnetLockFile := filepath.Join(tempDir, jsonnetfile.LockFile)
+			initCommand("")
 
-			code := initCommand(tempDir)
-			assert.Equal(t, 0, code)
+			jsonnetFileContent(t, jsonnetfile.File, []byte(`{}`))
 
-			jsonnetFileContent(t, jsonnetFile, []byte(`{}`))
+			installCommand("", "vendor", tc.URIs...)
 
-			code = installCommand(tempDir, "vendor", tc.URIs...)
-			assert.Equal(t, tc.ExpectedCode, code)
-
-			jsonnetFileContent(t, jsonnetFile, tc.ExpectedJsonnetFile)
-			jsonnetFileContent(t, jsonnetLockFile, tc.ExpectedJsonnetLockFile)
+			jsonnetFileContent(t, jsonnetfile.File, tc.ExpectedJsonnetFile)
+			jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)
 		})
 	}
+
+	cleanup()
 }
 
 func jsonnetFileContent(t *testing.T, filename string, content []byte) {

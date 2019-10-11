@@ -1,6 +1,6 @@
 {
   _config+:: {
-    golang: 'golang:1.12',
+    golang: 'golang:1.13',
   },
 
   kind: 'pipeline',

@@ -60,7 +60,7 @@ func Load(filepath string) (spec.JsonnetFile, error) {
 
 	bytes, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return m, errors.Wrap(err, "failed to read file")
+		return m, err
 	}
 
 	if err := json.Unmarshal(bytes, &m); err != nil {

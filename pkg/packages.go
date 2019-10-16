@@ -16,12 +16,12 @@ package pkg
 
 import (
 	"context"
-	"fmt"
+	"crypto/sha256"
+	"encoding/base64"
+	"io"
 	"os"
-	"path"
 	"path/filepath"
 
-	"github.com/fatih/color"
 	"github.com/pkg/errors"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
@@ -32,98 +32,111 @@ var (
 	VersionMismatch = errors.New("multiple colliding versions specified")
 )
 
-func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string, m spec.JsonnetFile, dir string) (*spec.JsonnetFile, error) {
-	lockfile := &spec.JsonnetFile{}
-	for _, dep := range m.Dependencies {
+func Ensure(want spec.JsonnetFile, vendorDir string, locks map[string]spec.Dependency) ([]spec.Dependency, error) {
+	var list []spec.Dependency
+	for _, d := range want.Dependencies {
+		l, present := locks[d.Name]
 
-		tmp := filepath.Join(dir, ".tmp")
-		err := os.MkdirAll(tmp, os.ModePerm)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create general tmp dir")
-		}
-
-		var p Interface
-		if dep.Source.GitSource != nil {
-			p = NewGitPackage(dep.Source.GitSource)
-		}
-		if dep.Source.LocalSource != nil {
-			p = NewLocalPackage(dep.Source.LocalSource)
-		}
-
-		lockVersion, err := p.Install(ctx, dep.Name, dir, dep.Version)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to install package")
-		}
-
-		color.Green(">>> Installed %s version %s\n", dep.Name, dep.Version)
-
-		destPath := path.Join(dir, dep.Name)
-
-		lockfile.Dependencies, err = insertDependency(lockfile.Dependencies, spec.Dependency{
-			Name:      dep.Name,
-			Source:    dep.Source,
-			Version:   lockVersion,
-			DepSource: dependencySourceIdentifier,
-		})
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to insert dependency to lock dependencies")
-		}
-
-		// If dependencies are being installed from a lock file, the transitive
-		// dependencies are not questioned, the locked dependencies are just
-		// installed.
-		if isLock {
+		// already locked and the integrity is intact
+		if present && check(l, vendorDir) {
+			list = append(list, l)
 			continue
 		}
 
-		filepath, isLock, err := jsonnetfile.Choose(destPath)
-		if err != nil {
-			return nil, err
-		}
-		depsDeps, err := jsonnetfile.Load(filepath)
-		// It is ok for dependencies not to have a JsonnetFile, it just means
-		// they do not have transitive dependencies of their own.
-		if err != nil && !os.IsNotExist(err) {
-			return nil, err
-		}
+		// either not present or not intact: download again
+		dir := filepath.Join(vendorDir, d.Name)
+		os.RemoveAll(dir)
 
-		depsInstalledByDependency, err := Install(ctx, isLock, filepath, depsDeps, dir)
+		locked, err := download(d, vendorDir)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "downloading")
 		}
-
-		for _, d := range depsInstalledByDependency.Dependencies {
-			lockfile.Dependencies, err = insertDependency(lockfile.Dependencies, d)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to insert dependency to lock dependencies")
-			}
-		}
+		list = append(list, *locked)
 	}
 
-	return lockfile, nil
+	for _, d := range list {
+		f, err := jsonnetfile.Load(filepath.Join(vendorDir, d.Name, jsonnetfile.File))
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
+		}
+
+		nested, err := Ensure(f, vendorDir, locks)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, nested...)
+	}
+
+	return list, nil
 }
 
-func insertDependency(deps []spec.Dependency, newDep spec.Dependency) ([]spec.Dependency, error) {
-	if len(deps) == 0 {
-		return []spec.Dependency{newDep}, nil
+func download(d spec.Dependency, vendorDir string) (*spec.Dependency, error) {
+	var p Interface
+	switch {
+	case d.Source.GitSource != nil:
+		p = NewGitPackage(d.Source.GitSource)
+	case d.Source.LocalSource != nil:
+		p = NewLocalPackage(d.Source.LocalSource)
 	}
 
-	res := []spec.Dependency{}
-	newDepPreviouslyPresent := false
-	for _, d := range deps {
-		if d.Name == newDep.Name {
-			if d.Version != newDep.Version {
-				return nil, fmt.Errorf("multiple colliding versions specified for %s: %s (from %s) and %s (from %s)", d.Name, d.Version, d.DepSource, newDep.Version, newDep.DepSource)
-			}
-			res = append(res, d)
-			newDepPreviouslyPresent = true
-		} else {
-			res = append(res, d)
+	if p == nil {
+		return nil, errors.New("either git or local source is required")
+	}
+
+	version, err := p.Install(context.TODO(), d.Name, vendorDir, d.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	sum := hashDir(filepath.Join(vendorDir, d.Name))
+
+	return &spec.Dependency{
+		Name:    d.Name,
+		Source:  d.Source,
+		Version: version,
+		Sum:     sum,
+	}, nil
+}
+
+func check(d spec.Dependency, vendorDir string) bool {
+	if d.Sum == "" {
+		// no sum available, need to download
+		return false
+	}
+
+	dir := filepath.Join(vendorDir, d.Name)
+	sum := hashDir(dir)
+	return d.Sum == sum
+}
+
+func hashDir(dir string) string {
+	hasher := sha256.New()
+
+	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
-	}
-	if !newDepPreviouslyPresent {
-		res = append(res, newDep)
-	}
 
-	return res, nil
+		if info.IsDir() {
+			return nil
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		if _, err := io.Copy(hasher, f); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return base64.StdEncoding.EncodeToString(hasher.Sum(nil))
 }

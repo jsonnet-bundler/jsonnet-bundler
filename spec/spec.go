@@ -22,6 +22,7 @@ type Dependency struct {
 	Name      string `json:"name"`
 	Source    Source `json:"source"`
 	Version   string `json:"version"`
+	Sum       string `json:"sum,omitempty"`
 	DepSource string `json:"-"`
 }
 

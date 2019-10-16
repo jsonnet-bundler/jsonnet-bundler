@@ -83,11 +83,11 @@ func Main() int {
 	case initCmd.FullCommand():
 		return initCommand(workdir)
 	case installCmd.FullCommand():
-		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs...)
+		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs)
 	case updateCmd.FullCommand():
 		return updateCommand(cfg.JsonnetHome)
 	default:
-		installCommand(workdir, cfg.JsonnetHome)
+		installCommand(workdir, cfg.JsonnetHome, []string{})
 	}
 
 	return 0

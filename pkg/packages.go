@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -42,6 +43,7 @@ func Ensure(want spec.JsonnetFile, vendorDir string, locks map[string]spec.Depen
 			list = append(list, l)
 			continue
 		}
+		expectedSum := d.Sum
 
 		// either not present or not intact: download again
 		dir := filepath.Join(vendorDir, d.Name)
@@ -50,6 +52,9 @@ func Ensure(want spec.JsonnetFile, vendorDir string, locks map[string]spec.Depen
 		locked, err := download(d, vendorDir)
 		if err != nil {
 			return nil, errors.Wrap(err, "downloading")
+		}
+		if expectedSum != "" && d.Sum != expectedSum {
+			return fmt.Errorf("checksum mismatch for %s. Expected %s but got %s", d.Name, expectedSum, d.Sum)
 		}
 		list = append(list, *locked)
 	}

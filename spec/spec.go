@@ -46,6 +46,9 @@ func (jf JsonnetFile) MarshalJSON() ([]byte, error) {
 		s.Dependencies = append(s.Dependencies, d)
 	}
 
+	sort.SliceStable(s.Dependencies, func(i int, j int) bool {
+		return s.Dependencies[i].Name < s.Dependencies[j].Name
+	})
 
 	return json.Marshal(s)
 }

@@ -15,51 +15,39 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
-	"io/ioutil"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 )
 
-func updateCommand(jsonnetHome string, urls ...*url.URL) int {
-	m, err := jsonnetfile.Load(jsonnetfile.File)
-	if err != nil {
-		kingpin.Fatalf("failed to load jsonnetfile: %v", err)
-		return 1
+func updateCommand(dir, jsonnetHome string, urls ...*url.URL) int {
+	if dir == "" {
+		dir = "."
 	}
 
-	err = os.MkdirAll(jsonnetHome, os.ModePerm)
-	if err != nil {
-		kingpin.Fatalf("failed to create jsonnet home path: %v", err)
-		return 3
-	}
+	jsonnetFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.File))
+	kingpin.FatalIfError(err, "failed to load jsonnetfile")
 
-	// When updating, the lockfile is explicitly ignored.
-	isLock := false
-	lock, err := pkg.Install(context.TODO(), isLock, jsonnetfile.File, m, jsonnetHome)
-	if err != nil {
-		kingpin.Fatalf("failed to install: %v", err)
-		return 3
-	}
+	kingpin.FatalIfError(
+		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
+		"creating vendor folder")
 
-	b, err := json.MarshalIndent(lock, "", "    ")
-	if err != nil {
-		kingpin.Fatalf("failed to encode jsonnet file: %v", err)
-		return 3
-	}
-	b = append(b, []byte("\n")...)
+	// When updating, locks are ignored.
+	locks := map[string]spec.Dependency{}
+	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, locks)
+	kingpin.FatalIfError(err, "failed to install packages")
 
-	err = ioutil.WriteFile(jsonnetfile.LockFile, b, 0644)
-	if err != nil {
-		kingpin.Fatalf("failed to write lock file: %v", err)
-		return 3
-	}
-
+	kingpin.FatalIfError(
+		writeJSONFile(filepath.Join(dir, jsonnetfile.File), jsonnetFile),
+		"updating jsonnetfile.json")
+	kingpin.FatalIfError(
+		writeJSONFile(filepath.Join(dir, jsonnetfile.LockFile), spec.JsonnetFile{Dependencies: locked}),
+		"updating jsonnetfile.lock.json")
 	return 0
 }

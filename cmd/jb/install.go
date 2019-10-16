@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/pkg/errors"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -33,21 +34,28 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 		dir = "."
 	}
 
-	kingpin.FatalIfError(
-		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
-		"creating vendor folder")
-
 	jsonnetFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.File))
 	kingpin.FatalIfError(err, "failed to load jsonnetfile")
-
-	for _, u := range uris {
-		d := parseDependency(dir, u)
-		jsonnetFile.Dependencies[d.Name] = *d
-	}
 
 	lockFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.LockFile))
 	if !os.IsNotExist(err) {
 		kingpin.FatalIfError(err, "failed to load lockfile")
+	}
+
+	kingpin.FatalIfError(
+		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
+		"creating vendor folder")
+
+	for _, u := range uris {
+		d := parseDependency(dir, u)
+
+		if !depEqual(jsonnetFile.Dependencies[d.Name], *d) {
+			// the dep passed on the cli is different from the jsonnetFile
+			jsonnetFile.Dependencies[d.Name] = *d
+
+			// we want to install the passed version (ignore the lock)
+			delete(lockFile.Dependencies, d.Name)
+		}
 	}
 
 	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, lockFile.Dependencies)
@@ -61,6 +69,14 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 		"updating jsonnetfile.lock.json")
 
 	return 0
+}
+
+func depEqual(d1, d2 spec.Dependency) bool {
+	name := d1.Name == d2.Name
+	version := d1.Version == d2.Version
+	source := reflect.DeepEqual(d1.Source, d2.Source)
+
+	return name && version && source
 }
 
 func writeJSONFile(name string, d interface{}) error {

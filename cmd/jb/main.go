@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
@@ -53,6 +54,8 @@ func Main() int {
 	cfg := struct {
 		JsonnetHome string
 	}{}
+
+	color.Output = color.Error
 
 	a := kingpin.New(filepath.Base(os.Args[0]), "A jsonnet package manager")
 	a.HelpFlag.Short('h')

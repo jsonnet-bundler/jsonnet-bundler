@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
@@ -33,18 +34,66 @@ var (
 	VersionMismatch = errors.New("multiple colliding versions specified")
 )
 
-func Ensure(want spec.JsonnetFile, vendorDir string, locks map[string]spec.Dependency) (map[string]spec.Dependency, error) {
+// Ensure receives all direct packages as, the directory to vendor in and all known locks.
+// It then makes sure all direct and nested dependencies are present in vendor at the correct version:
+//
+// If the package is locked and the files in vendor match the sha256 checksum,
+// nothing needs to be done. Otherwise, the package is retrieved from the
+// upstream source and added into vendor. If previously locked, the sums are
+// checked as well.
+// In case a (nested) package is already present in the lock,
+// the one from the lock takes precedence. This allows the user to set the
+// desired version in case by `jb install`ing it.
+//
+// Finally, all unknown files and directories are removed from vendor/
+func Ensure(direct spec.JsonnetFile, vendorDir string, locks map[string]spec.Dependency) (map[string]spec.Dependency, error) {
+	// ensure all required files are in vendor
+	deps, err := ensure(direct.Dependencies, vendorDir, locks)
+	if err != nil {
+		return nil, err
+	}
+
+	// cleanup unknown dirs from vendor/
+	f, err := os.Open(vendorDir)
+	if err != nil {
+		return nil, err
+	}
+	names, err := f.Readdirnames(0)
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range names {
+		if _, ok := deps[name]; !ok {
+			dir := filepath.Join(vendorDir, name)
+			if err := os.RemoveAll(dir); err != nil {
+				return nil, err
+			}
+			if name != ".tmp" {
+				color.Magenta("CLEAN %s", dir)
+			}
+		}
+	}
+
+	// return the final lockfile contents
+	return deps, nil
+}
+
+func ensure(direct map[string]spec.Dependency, vendorDir string, locks map[string]spec.Dependency) (map[string]spec.Dependency, error) {
 	deps := make(map[string]spec.Dependency)
 
-	for _, d := range want.Dependencies {
+	for _, d := range direct {
 		l, present := locks[d.Name]
 
 		// already locked and the integrity is intact
-		if present && check(l, vendorDir) {
-			deps[d.Name] = l
-			continue
+		if present {
+			d.Version = locks[d.Name].Version
+
+			if check(l, vendorDir) {
+				deps[d.Name] = l
+				continue
+			}
 		}
-		expectedSum := d.Sum
+		expectedSum := locks[d.Name].Sum
 
 		// either not present or not intact: download again
 		dir := filepath.Join(vendorDir, d.Name)
@@ -54,10 +103,12 @@ func Ensure(want spec.JsonnetFile, vendorDir string, locks map[string]spec.Depen
 		if err != nil {
 			return nil, errors.Wrap(err, "downloading")
 		}
-		if expectedSum != "" && d.Sum != expectedSum {
-			return nil, fmt.Errorf("checksum mismatch for %s. Expected %s but got %s", d.Name, expectedSum, d.Sum)
+		if expectedSum != "" && locked.Sum != expectedSum {
+			return nil, fmt.Errorf("checksum mismatch for %s. Expected %s but got %s", d.Name, expectedSum, locked.Sum)
 		}
 		deps[d.Name] = *locked
+		// we settled on a new version, add it to the locks for recursion
+		locks[d.Name] = *locked
 	}
 
 	for _, d := range deps {
@@ -69,7 +120,7 @@ func Ensure(want spec.JsonnetFile, vendorDir string, locks map[string]spec.Depen
 			return nil, err
 		}
 
-		nested, err := Ensure(f, vendorDir, locks)
+		nested, err := ensure(f.Dependencies, vendorDir, locks)
 		if err != nil {
 			return nil, err
 		}
@@ -84,6 +135,8 @@ func Ensure(want spec.JsonnetFile, vendorDir string, locks map[string]spec.Depen
 	return deps, nil
 }
 
+// download retrieves a package from a remote upstream. The checksum of the
+// files is generated afterwards.
 func download(d spec.Dependency, vendorDir string) (*spec.Dependency, error) {
 	var p Interface
 	switch {
@@ -112,6 +165,8 @@ func download(d spec.Dependency, vendorDir string) (*spec.Dependency, error) {
 	}, nil
 }
 
+// check returns whether the files present at the vendor/ folder match the
+// sha256 sum of the package
 func check(d spec.Dependency, vendorDir string) bool {
 	if d.Sum == "" {
 		// no sum available, need to download
@@ -123,6 +178,9 @@ func check(d spec.Dependency, vendorDir string) bool {
 	return d.Sum == sum
 }
 
+// hashDir computes the checksum of a directory by concatenating all files and
+// hashing this data using sha256. This can be memory heavy with lots of data,
+// but jsonnet files should be fairly small
 func hashDir(dir string) string {
 	hasher := sha256.New()
 

@@ -66,6 +66,9 @@ func Load(filepath string) (spec.JsonnetFile, error) {
 	if err := json.Unmarshal(bytes, &m); err != nil {
 		return m, errors.Wrap(err, "failed to unmarshal file")
 	}
+	if m.Dependencies == nil {
+		m.Dependencies = make(map[string]spec.Dependency)
+	}
 
 	return m, nil
 }

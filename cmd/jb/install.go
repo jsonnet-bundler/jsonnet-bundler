@@ -34,15 +34,15 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 	}
 
 	kingpin.FatalIfError(
-		os.MkdirAll(filepath.Join(dir, "vendor", ".tmp"), os.ModePerm),
-		"creating vendor/ folder")
+		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
+		"creating vendor folder")
 
 	jsonnetFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.File))
 	kingpin.FatalIfError(err, "failed to load jsonnetfile")
 
 	for _, u := range uris {
 		d := parseDependency(dir, u)
-		jsonnetFile.Dependencies = append(jsonnetFile.Dependencies, *d)
+		jsonnetFile.Dependencies[d.Name] = *d
 	}
 
 	lockFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.LockFile))
@@ -50,12 +50,7 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 		kingpin.FatalIfError(err, "failed to load lockfile")
 	}
 
-	locks := make(map[string]spec.Dependency)
-	for _, d := range lockFile.Dependencies {
-		locks[d.Name] = d
-	}
-
-	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, locks)
+	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, lockFile.Dependencies)
 	kingpin.FatalIfError(err, "failed to install packages")
 
 	kingpin.FatalIfError(

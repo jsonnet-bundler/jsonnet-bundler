@@ -33,14 +33,15 @@ var (
 	VersionMismatch = errors.New("multiple colliding versions specified")
 )
 
-func Ensure(want spec.JsonnetFile, vendorDir string, locks map[string]spec.Dependency) ([]spec.Dependency, error) {
-	var list []spec.Dependency
+func Ensure(want spec.JsonnetFile, vendorDir string, locks map[string]spec.Dependency) (map[string]spec.Dependency, error) {
+	deps := make(map[string]spec.Dependency)
+
 	for _, d := range want.Dependencies {
 		l, present := locks[d.Name]
 
 		// already locked and the integrity is intact
 		if present && check(l, vendorDir) {
-			list = append(list, l)
+			deps[d.Name] = l
 			continue
 		}
 		expectedSum := d.Sum
@@ -54,12 +55,12 @@ func Ensure(want spec.JsonnetFile, vendorDir string, locks map[string]spec.Depen
 			return nil, errors.Wrap(err, "downloading")
 		}
 		if expectedSum != "" && d.Sum != expectedSum {
-			return fmt.Errorf("checksum mismatch for %s. Expected %s but got %s", d.Name, expectedSum, d.Sum)
+			return nil, fmt.Errorf("checksum mismatch for %s. Expected %s but got %s", d.Name, expectedSum, d.Sum)
 		}
-		list = append(list, *locked)
+		deps[d.Name] = *locked
 	}
 
-	for _, d := range list {
+	for _, d := range deps {
 		f, err := jsonnetfile.Load(filepath.Join(vendorDir, d.Name, jsonnetfile.File))
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -73,10 +74,14 @@ func Ensure(want spec.JsonnetFile, vendorDir string, locks map[string]spec.Depen
 			return nil, err
 		}
 
-		list = append(list, nested...)
+		for _, d := range nested {
+			if _, ok := deps[d.Name]; !ok {
+				deps[d.Name] = d
+			}
+		}
 	}
 
-	return list, nil
+	return deps, nil
 }
 
 func download(d spec.Dependency, vendorDir string) (*spec.Dependency, error) {

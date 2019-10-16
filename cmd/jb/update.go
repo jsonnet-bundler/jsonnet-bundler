@@ -21,13 +21,14 @@ import (
 	"net/url"
 	"os"
 
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
+
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 func updateCommand(jsonnetHome string, urls ...*url.URL) int {
-	m, err := pkg.LoadJsonnetfile(jsonnetfile.File)
+	m, err := jsonnetfile.Load(jsonnetfile.File)
 	if err != nil {
 		kingpin.Fatalf("failed to load jsonnetfile: %v", err)
 		return 1

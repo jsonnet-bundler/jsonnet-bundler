@@ -18,13 +18,13 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
+
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 func initCommand(dir string) int {
-	exists, err := pkg.FileExists(jsonnetfile.File)
+	exists, err := jsonnetfile.Exists(jsonnetfile.File)
 	if err != nil {
 		kingpin.Errorf("Failed to check for jsonnetfile.json: %v", err)
 		return 1

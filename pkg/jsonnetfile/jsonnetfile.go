@@ -18,22 +18,25 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
+
+	"github.com/pkg/errors"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
-	"github.com/pkg/errors"
 )
 
-const File = "jsonnetfile.json"
-const LockFile = "jsonnetfile.lock.json"
+const (
+	File     = "jsonnetfile.json"
+	LockFile = "jsonnetfile.lock.json"
+)
 
 var ErrNoFile = errors.New("no jsonnetfile")
 
 func Choose(dir string) (string, bool, error) {
-	jsonnetfileLock := path.Join(dir, LockFile)
-	jsonnetfile := path.Join(dir, File)
+	jsonnetfileLock := filepath.Join(dir, LockFile)
+	jsonnetfile := filepath.Join(dir, File)
 
-	lockExists, err := fileExists(jsonnetfileLock)
+	lockExists, err := Exists(jsonnetfileLock)
 	if err != nil {
 		return "", false, err
 	}
@@ -41,7 +44,7 @@ func Choose(dir string) (string, bool, error) {
 		return jsonnetfileLock, true, nil
 	}
 
-	fileExists, err := fileExists(jsonnetfile)
+	fileExists, err := Exists(jsonnetfile)
 	if err != nil {
 		return "", false, err
 	}
@@ -67,7 +70,7 @@ func Load(filepath string) (spec.JsonnetFile, error) {
 	return m, nil
 }
 
-func fileExists(path string) (bool, error) {
+func Exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false, nil

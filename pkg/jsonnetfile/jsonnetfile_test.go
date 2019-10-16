@@ -21,9 +21,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
-	"github.com/stretchr/testify/assert"
 )
 
 const notExist = "/this/does/not/exist"
@@ -157,5 +158,28 @@ func TestLoad(t *testing.T) {
 		jf, err := jsonnetfile.Load(tempFile)
 		assert.Nil(t, err)
 		assert.Equal(t, jsonnetFileExpected, jf)
+	}
+}
+
+func TestFileExists(t *testing.T) {
+	{
+		exists, err := jsonnetfile.Exists(notExist)
+		assert.False(t, exists)
+		assert.Nil(t, err)
+	}
+	{
+		tempFile, err := ioutil.TempFile("", "jb-exists")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer func() {
+			err := os.Remove(tempFile.Name())
+			assert.Nil(t, err)
+		}()
+
+		exists, err := jsonnetfile.Exists(tempFile.Name())
+		assert.True(t, exists)
+		assert.Nil(t, err)
 	}
 }

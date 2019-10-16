@@ -21,10 +21,11 @@ import (
 	"os"
 	"path/filepath"
 
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
+
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 func installCommand(dir, jsonnetHome string, uris ...string) int {

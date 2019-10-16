@@ -16,16 +16,16 @@ package pkg
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/fatih/color"
+	"github.com/pkg/errors"
+
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -76,11 +76,11 @@ func Install(ctx context.Context, isLock bool, dependencySourceIdentifier string
 			continue
 		}
 
-		filepath, isLock, err := ChooseJsonnetFile(destPath)
+		filepath, isLock, err := jsonnetfile.Choose(destPath)
 		if err != nil {
 			return nil, err
 		}
-		depsDeps, err := LoadJsonnetfile(filepath)
+		depsDeps, err := jsonnetfile.Load(filepath)
 		// It is ok for dependencies not to have a JsonnetFile, it just means
 		// they do not have transitive dependencies of their own.
 		if err != nil && !os.IsNotExist(err) {
@@ -126,56 +126,4 @@ func insertDependency(deps []spec.Dependency, newDep spec.Dependency) ([]spec.De
 	}
 
 	return res, nil
-}
-
-func FileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
-func ChooseJsonnetFile(dir string) (string, bool, error) {
-	lockfilePath := path.Join(dir, jsonnetfile.LockFile)
-	jsonnetfilePath := path.Join(dir, jsonnetfile.File)
-	filename := lockfilePath
-	isLock := true
-
-	lockExists, err := FileExists(filepath.Join(dir, jsonnetfile.LockFile))
-	if err != nil {
-		return "", false, err
-	}
-
-	if !lockExists {
-		filename = jsonnetfilePath
-		isLock = false
-	}
-
-	return filename, isLock, err
-}
-
-func LoadJsonnetfile(filepath string) (spec.JsonnetFile, error) {
-	m := spec.JsonnetFile{}
-
-	if _, err := os.Stat(filepath); err != nil {
-		return m, err
-	}
-
-	f, err := os.Open(filepath)
-	if err != nil {
-		return m, err
-	}
-	defer f.Close()
-
-	err = json.NewDecoder(f).Decode(&m)
-	if err != nil {
-		return m, err
-	}
-
-	return m, nil
 }

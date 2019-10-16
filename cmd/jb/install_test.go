@@ -21,8 +21,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 )
 
 func TestInstallCommand(t *testing.T) {

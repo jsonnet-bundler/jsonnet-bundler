@@ -45,47 +45,33 @@ func NewGitPackage(source *spec.GitSource) Interface {
 	}
 }
 
-func downloadGitHubArchive(filepath string, url string) (string, error) {
+func downloadGitHubArchive(filepath string, url string) error {
 	// Get the data
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return err
 	}
 	color.Cyan("GET %s %d", url, resp.StatusCode)
 	if resp.StatusCode != 200 {
-		return "", errors.New(fmt.Sprintf("unexpected status code %d", resp.StatusCode))
+		return errors.New(fmt.Sprintf("unexpected status code %d", resp.StatusCode))
 	}
 
-	// GitHub conveniently uses the commit SHA1 at the ETag
-	// signature for the archive. This is needed when doing `jb update`
-	// to resolve a ref (ie. "master") to a commit SHA1 for the lock file
-	etagValue := resp.Header.Get(http.CanonicalHeaderKey("ETag"))
-	if etagValue == "" {
-		return "", errors.New("ETag header is missing from response")
-	}
-
-	commitShaPattern, _ := regexp.Compile("^\"([0-9a-f]{40})\"$")
-	m := commitShaPattern.FindStringSubmatch(etagValue)
-	if len(m) < 2 {
-		return "", errors.New(fmt.Sprintf("etag value \"%s\" does not look like a SHA1", etagValue))
-	}
-	commitSha := m[1]
 	defer resp.Body.Close()
 
 	// Create the file
 	out, err := os.Create(filepath)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer out.Close()
 
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return commitSha, nil
+	return nil
 }
 
 func gzipUntar(dst string, r io.Reader, subDir string) error {
@@ -157,6 +143,21 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 	}
 }
 
+func remoteResolveRef(ctx context.Context, remote string, ref string) (string, error) {
+	b := bytes.NewBuffer(nil)
+	cmd := exec.CommandContext(ctx, "git", "ls-remote", "--heads", "--tags", "--refs", "--quiet", remote, ref)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = b
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	commitShaPattern, _ := regexp.Compile("^([0-9a-f]{40})\\b")
+	commitSha := commitShaPattern.FindString(b.String())
+	return commitSha, nil
+}
+
 func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (string, error) {
 	destPath := path.Join(dir, name)
 
@@ -171,11 +172,22 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	// the ETag header included in the response.
 	isGitHubRemote, err := regexp.MatchString(`^(https|ssh)://github\.com/.+$`, p.Source.Remote)
 	if isGitHubRemote {
-		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", p.Source.Remote, version)
+		// Let git ls-remote decide if "version" is a ref or a SHA1 in the unlikely
+		// but possible event that a ref is exactly 40 hex characters
+		commitSha, err := remoteResolveRef(ctx, p.Source.Remote, version)
+
+		// If the ref resolution failed and "version" looks like a SHA1, assume it is one
+		// and proceed.
+		commitShaPattern, _ := regexp.Compile("^([0-9a-f]{40})$")
+		if commitSha == "" && commitShaPattern.MatchString(version) {
+			commitSha = version
+		}
+
+		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", p.Source.Remote, commitSha)
 		archiveFilepath := fmt.Sprintf("%s.tar.gz", tmpDir)
 
 		defer os.Remove(archiveFilepath)
-		commitSha, err := downloadGitHubArchive(archiveFilepath, archiveUrl)
+		err = downloadGitHubArchive(archiveFilepath, archiveUrl)
 		if err == nil {
 			r, err := os.Open(archiveFilepath)
 			defer r.Close()

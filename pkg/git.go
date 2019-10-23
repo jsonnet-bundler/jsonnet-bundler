@@ -56,18 +56,18 @@ func downloadGitHubArchive(filepath string, url string) (string, error) {
 		return "", errors.New(fmt.Sprintf("unexpected status code %d", resp.StatusCode))
 	}
 
-	// GitHub conveniently uses the commit SHA1 at the ETag
+	// GitHub conveniently uses the commit SHA256 at the ETag
 	// signature for the archive. This is needed when doing `jb update`
-	// to resolve a ref (ie. "master") to a commit SHA1 for the lock file
+	// to resolve a ref (ie. "master") to a commit SHA256 for the lock file
 	etagValue := resp.Header.Get(http.CanonicalHeaderKey("ETag"))
 	if etagValue == "" {
 		return "", errors.New("ETag header is missing from response")
 	}
 
-	commitShaPattern, _ := regexp.Compile("^\"([0-9a-f]{40})\"$")
+	commitShaPattern, _ := regexp.Compile("^(W/)?\"([0-9a-f]{64})\"$")
 	m := commitShaPattern.FindStringSubmatch(etagValue)
 	if len(m) < 2 {
-		return "", errors.New(fmt.Sprintf("etag value \"%s\" does not look like a SHA1", etagValue))
+		return "", errors.New(fmt.Sprintf("etag value \"%s\" does not look like a SHA256", etagValue))
 	}
 	commitSha := m[1]
 	defer resp.Body.Close()
@@ -167,7 +167,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	defer os.RemoveAll(tmpDir)
 
 	// Optimization for GitHub sources: download a tarball archive of the requested
-	// version instead of cloning the entire repository. The SHA1 is discovered through
+	// version instead of cloning the entire repository. The SHA256 is discovered through
 	// the ETag header included in the response.
 	isGitHubRemote, err := regexp.MatchString(`^(https|ssh)://github\.com/.+$`, p.Source.Remote)
 	if isGitHubRemote {

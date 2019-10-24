@@ -144,7 +144,7 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 }
 
 func remoteResolveRef(ctx context.Context, remote string, ref string) (string, error) {
-	b := bytes.NewBuffer(nil)
+	b := &bytes.Buffer{}
 	cmd := exec.CommandContext(ctx, "git", "ls-remote", "--heads", "--tags", "--refs", "--quiet", remote, ref)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = b

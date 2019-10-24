@@ -178,7 +178,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 
 		// If the ref resolution failed and "version" looks like a SHA1, assume it is one
 		// and proceed.
-		commitShaPattern, _ := regexp.Compile("^([0-9a-f]{40})$")
+		commitShaPattern := regexp.MustCompile("^([0-9a-f]{40})$")
 		if commitSha == "" && commitShaPattern.MatchString(version) {
 			commitSha = version
 		}

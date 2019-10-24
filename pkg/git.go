@@ -168,12 +168,11 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	defer os.RemoveAll(tmpDir)
 
 	// Optimization for GitHub sources: download a tarball archive of the requested
-	// version instead of cloning the entire repository. The SHA1 is discovered through
-	// the ETag header included in the response.
+	// version instead of cloning the entire repository.
 	isGitHubRemote, err := regexp.MatchString(`^(https|ssh)://github\.com/.+$`, p.Source.Remote)
 	if isGitHubRemote {
-		// Let git ls-remote decide if "version" is a ref or a SHA1 in the unlikely
-		// but possible event that a ref is exactly 40 hex characters
+		// Let git ls-remote decide if "version" is a ref or a commit SHA in the unlikely
+		// but possible event that a ref is comprised of 40 or more hex characters
 		commitSha, err := remoteResolveRef(ctx, p.Source.Remote, version)
 
 		// If the ref resolution failed and "version" looks like a SHA,

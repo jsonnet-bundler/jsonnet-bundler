@@ -153,7 +153,7 @@ func remoteResolveRef(ctx context.Context, remote string, ref string) (string, e
 	if err != nil {
 		return "", err
 	}
-	commitShaPattern, _ := regexp.Compile("^([0-9a-f]{40})\\b")
+	commitShaPattern := regexp.MustCompile("^([0-9a-f]{40,})\\b")
 	commitSha := commitShaPattern.FindString(b.String())
 	return commitSha, nil
 }
@@ -176,9 +176,9 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		// but possible event that a ref is exactly 40 hex characters
 		commitSha, err := remoteResolveRef(ctx, p.Source.Remote, version)
 
-		// If the ref resolution failed and "version" looks like a SHA1, assume it is one
-		// and proceed.
-		commitShaPattern := regexp.MustCompile("^([0-9a-f]{40})$")
+		// If the ref resolution failed and "version" looks like a SHA,
+		// assume it is one and proceed.
+		commitShaPattern := regexp.MustCompile("^([0-9a-f]{40,})$")
 		if commitSha == "" && commitShaPattern.MatchString(version) {
 			commitSha = version
 		}

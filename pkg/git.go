@@ -53,7 +53,7 @@ func downloadGitHubArchive(filepath string, url string) error {
 	}
 	color.Cyan("GET %s %d", url, resp.StatusCode)
 	if resp.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("unexpected status code %d", resp.StatusCode))
+		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
 	}
 
 	defer resp.Body.Close()

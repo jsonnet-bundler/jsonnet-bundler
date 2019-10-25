@@ -118,10 +118,8 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 
 		// create directories as needed
 		case tar.TypeDir:
-			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, os.FileMode(header.Mode)); err != nil {
-					return err
-				}
+			if err := os.MkdirAll(target, os.FileMode(header.Mode)); err != nil {
+				return err
 			}
 
 		case tar.TypeReg:
@@ -139,6 +137,15 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 			// Using defer would accumulate an unbounded quantity of
 			// handles and release them all at once at function end.
 			f.Close()
+
+		case tar.TypeSymlink:
+			if err := os.MkdirAll(filepath.Dir(target), os.FileMode(header.Mode)); err != nil {
+				return err
+			}
+
+			if err := os.Symlink(header.Linkname, target); err != nil {
+				return err
+			}
 		}
 	}
 }

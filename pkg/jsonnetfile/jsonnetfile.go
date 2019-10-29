@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 
@@ -32,9 +31,9 @@ const (
 
 var ErrNoFile = errors.New("no jsonnetfile")
 
-
+// Load reads a jsonnetfile.(lock).json from disk
 func Load(filepath string) (spec.JsonnetFile, error) {
-	m := spec.JsonnetFile{}
+	m := spec.New()
 
 	bytes, err := ioutil.ReadFile(filepath)
 	if err != nil {
@@ -51,6 +50,7 @@ func Load(filepath string) (spec.JsonnetFile, error) {
 	return m, nil
 }
 
+// Exists returns whether the file at the given path exists
 func Exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {

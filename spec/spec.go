@@ -19,14 +19,26 @@ import (
 	"sort"
 )
 
+// JsonnetFile is the structure of a `.json` file describing a set of jsonnet
+// dependencies. It is used for both, the jsonnetFile and the lockFile.
 type JsonnetFile struct {
 	Dependencies map[string]Dependency
 }
 
+// New returns a new JsonnetFile with the dependencies map initialized
+func New() JsonnetFile {
+	return JsonnetFile{
+		Dependencies: make(map[string]Dependency),
+	}
+}
+
+// jsonFile is the json representation of a JsonnetFile, which is different for
+// compatibility reasons.
 type jsonFile struct {
 	Dependencies []Dependency `json:"dependencies"`
 }
 
+// UnmarshalJSON unmarshals a `jsonFile`'s json into a JsonnetFile
 func (jf *JsonnetFile) UnmarshalJSON(data []byte) error {
 	var s jsonFile
 	if err := json.Unmarshal(data, &s); err != nil {
@@ -40,6 +52,7 @@ func (jf *JsonnetFile) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON serializes a JsonnetFile into json of the format of a `jsonFile`
 func (jf JsonnetFile) MarshalJSON() ([]byte, error) {
 	var s jsonFile
 	for _, d := range jf.Dependencies {

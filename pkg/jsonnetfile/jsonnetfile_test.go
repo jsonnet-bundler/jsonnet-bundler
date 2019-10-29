@@ -18,7 +18,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +29,7 @@ import (
 const notExist = "/this/does/not/exist"
 
 func TestLoad(t *testing.T) {
-	empty := spec.JsonnetFile{}
+	empty := spec.New()
 
 	jsonnetfileContent := `{
     "dependencies": [
@@ -48,17 +47,18 @@ func TestLoad(t *testing.T) {
 }
 `
 	jsonnetFileExpected := spec.JsonnetFile{
-		Dependencies: []spec.Dependency{{
-			Name: "foobar",
-			Source: spec.Source{
-				GitSource: &spec.GitSource{
-					Remote: "https://github.com/foobar/foobar",
-					Subdir: "",
+		Dependencies: map[string]spec.Dependency{
+			"foobar": {
+				Name: "foobar",
+				Source: spec.Source{
+					GitSource: &spec.GitSource{
+						Remote: "https://github.com/foobar/foobar",
+						Subdir: "",
+					},
 				},
-			},
-			Version:   "master",
-			DepSource: "",
-		}},
+				Version:   "master",
+				DepSource: "",
+			}},
 	}
 
 	{

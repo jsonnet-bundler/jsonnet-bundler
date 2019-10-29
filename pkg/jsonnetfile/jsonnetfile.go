@@ -32,28 +32,6 @@ const (
 
 var ErrNoFile = errors.New("no jsonnetfile")
 
-func Choose(dir string) (string, bool, error) {
-	jsonnetfileLock := filepath.Join(dir, LockFile)
-	jsonnetfile := filepath.Join(dir, File)
-
-	lockExists, err := Exists(jsonnetfileLock)
-	if err != nil {
-		return "", false, err
-	}
-	if lockExists {
-		return jsonnetfileLock, true, nil
-	}
-
-	fileExists, err := Exists(jsonnetfile)
-	if err != nil {
-		return "", false, err
-	}
-	if fileExists {
-		return jsonnetfile, false, nil
-	}
-
-	return "", false, ErrNoFile
-}
 
 func Load(filepath string) (spec.JsonnetFile, error) {
 	m := spec.JsonnetFile{}

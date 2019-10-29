@@ -13,23 +13,3 @@
 // limitations under the License.
 
 package pkg
-
-import (
-	"testing"
-
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
-)
-
-func TestInsertDependency(t *testing.T) {
-	deps := []spec.Dependency{{Name: "test1", Version: "latest"}}
-	dep := spec.Dependency{Name: "test2", Version: "latest"}
-
-	res, err := insertDependency(deps, dep)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(res) != 2 {
-		t.Fatal("Incorrectly inserted")
-	}
-}

@@ -29,63 +29,6 @@ import (
 
 const notExist = "/this/does/not/exist"
 
-func TestChoose(t *testing.T) {
-	testcases := []struct {
-		Name             string
-		Jsonnetfile      []byte
-		JsonnetfileLock  []byte
-		ExpectedFilename string
-		ExpectedLock     bool
-		ExpectedError    error
-	}{{
-		Name:             "NoFiles",
-		ExpectedFilename: "",
-		ExpectedLock:     false,
-		ExpectedError:    jsonnetfile.ErrNoFile,
-	}, {
-		Name:             "Jsonnetfile",
-		Jsonnetfile:      []byte(`{}`),
-		ExpectedFilename: jsonnetfile.File,
-		ExpectedLock:     false,
-		ExpectedError:    nil,
-	}, {
-		Name:             "JsonnetfileLock",
-		Jsonnetfile:      []byte(`{}`),
-		JsonnetfileLock:  []byte(`{}`),
-		ExpectedFilename: jsonnetfile.LockFile,
-		ExpectedLock:     true,
-		ExpectedError:    nil,
-	}}
-
-	for _, tc := range testcases {
-		t.Run(tc.Name, func(t *testing.T) {
-			dir, err := ioutil.TempDir("", "jsonnetfile-choose")
-			assert.Nil(t, err)
-			defer os.Remove(dir)
-
-			if tc.Jsonnetfile != nil {
-				err := ioutil.WriteFile(filepath.Join(dir, jsonnetfile.File), tc.Jsonnetfile, os.ModePerm)
-				assert.NoError(t, err)
-			}
-			if tc.JsonnetfileLock != nil {
-				err := ioutil.WriteFile(filepath.Join(dir, jsonnetfile.LockFile), tc.JsonnetfileLock, os.ModePerm)
-				assert.NoError(t, err)
-			}
-
-			filename, isLock, err := jsonnetfile.Choose(dir)
-
-			assert.Equal(t, tc.ExpectedFilename, strings.TrimPrefix(filename, dir+"/"))
-			assert.Equal(t, tc.ExpectedLock, isLock)
-
-			if tc.ExpectedError != nil {
-				assert.EqualError(t, err, tc.ExpectedError.Error())
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
 func TestLoad(t *testing.T) {
 	empty := spec.JsonnetFile{}
 

@@ -48,6 +48,9 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 
 	for _, u := range uris {
 		d := parseDependency(dir, u)
+		if d == nil {
+			kingpin.Fatalf("Unable to parse package URI `%s`", u)
+		}
 
 		if !depEqual(jsonnetFile.Dependencies[d.Name], *d) {
 			// the dep passed on the cli is different from the jsonnetFile

@@ -155,7 +155,10 @@ func download(d spec.Dependency, vendorDir string) (*spec.Dependency, error) {
 		return nil, err
 	}
 
-	sum := hashDir(filepath.Join(vendorDir, d.Name))
+	var sum string
+	if d.Source.LocalSource == nil {
+		sum = hashDir(filepath.Join(vendorDir, d.Name))
+	}
 
 	return &spec.Dependency{
 		Name:    d.Name,
@@ -166,8 +169,19 @@ func download(d spec.Dependency, vendorDir string) (*spec.Dependency, error) {
 }
 
 // check returns whether the files present at the vendor/ folder match the
-// sha256 sum of the package
+// sha256 sum of the package. local-directory dependencies are not checked as
+// their purpose is to change during development where integrity checking would
+// be a hindrance.
 func check(d spec.Dependency, vendorDir string) bool {
+	// assume a local dependency is intact as long as it exists
+	if d.Source.LocalSource != nil {
+		x, err := jsonnetfile.Exists(filepath.Join(vendorDir, d.Name))
+		if err != nil {
+			return false
+		}
+		return x
+	}
+
 	if d.Sum == "" {
 		// no sum available, need to download
 		return false

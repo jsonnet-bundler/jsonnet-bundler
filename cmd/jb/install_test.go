@@ -50,7 +50,7 @@ func TestInstallCommand(t *testing.T) {
 			URIs:                    []string{"jsonnet/foobar"},
 			ExpectedCode:            0,
 			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}]}`),
-			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "jsonnet/foobar"}}, "version": "", "sum": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="}]}`),
+			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}]}`),
 		},
 	}
 

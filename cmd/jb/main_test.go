@@ -18,8 +18,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 )
 
 func TestParseDependency(t *testing.T) {

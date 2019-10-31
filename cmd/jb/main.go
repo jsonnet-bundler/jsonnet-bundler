@@ -20,11 +20,12 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
+
+	"github.com/fatih/color"
+	"github.com/pkg/errors"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
-	"github.com/pkg/errors"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const (
@@ -34,10 +35,10 @@ const (
 )
 
 var (
-	gitSSHRegex                   = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git")
-	gitSSHWithVersionRegex        = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git@(.*)")
-	gitSSHWithPathRegex           = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)")
-	gitSSHWithPathAndVersionRegex = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)@(.*)")
+	gitSSHRegex                   = regexp.MustCompile(`git\+ssh://git@([^:]+):([^/]+)/([^/]+).git`)
+	gitSSHWithVersionRegex        = regexp.MustCompile(`git\+ssh://git@([^:]+):([^/]+)/([^/]+).git@(.*)`)
+	gitSSHWithPathRegex           = regexp.MustCompile(`git\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)`)
+	gitSSHWithPathAndVersionRegex = regexp.MustCompile(`git\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)@(.*)`)
 
 	githubSlugRegex                   = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)")
 	githubSlugWithVersionRegex        = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)@(.*)")
@@ -53,6 +54,8 @@ func Main() int {
 	cfg := struct {
 		JsonnetHome string
 	}{}
+
+	color.Output = color.Error
 
 	a := kingpin.New(filepath.Base(os.Args[0]), "A jsonnet package manager")
 	a.HelpFlag.Short('h')
@@ -83,63 +86,60 @@ func Main() int {
 	case initCmd.FullCommand():
 		return initCommand(workdir)
 	case installCmd.FullCommand():
-		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs...)
+		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs)
 	case updateCmd.FullCommand():
-		return updateCommand(cfg.JsonnetHome)
+		return updateCommand(workdir, cfg.JsonnetHome)
 	default:
-		installCommand(workdir, cfg.JsonnetHome)
+		installCommand(workdir, cfg.JsonnetHome, []string{})
 	}
 
 	return 0
 }
 
 func parseDependency(dir, uri string) *spec.Dependency {
-	if d := parseGitSSHDependency(uri); d != nil {
-		return d
-	}
-
-	if d := parseGithubDependency(uri); d != nil {
-		return d
-	}
-
-	if d := parseLocalDependency(dir, uri); d != nil {
-		return d
-	}
-
-	return nil
-}
-
-func parseGitSSHDependency(p string) *spec.Dependency {
-	if !gitSSHRegex.MatchString(p) {
+	if uri == "" {
 		return nil
 	}
 
+	if githubSlugRegex.MatchString(uri) {
+		return parseGithubDependency(uri)
+	}
+
+	if gitSSHRegex.MatchString(uri) {
+		return parseGitSSHDependency(uri)
+	}
+
+	return parseLocalDependency(dir, uri)
+}
+
+func parseGitSSHDependency(p string) *spec.Dependency {
 	subdir := ""
 	host := ""
 	org := ""
 	repo := ""
 	version := "master"
 
-	if gitSSHWithPathAndVersionRegex.MatchString(p) {
+	switch {
+	case gitSSHWithPathAndVersionRegex.MatchString(p):
 		matches := gitSSHWithPathAndVersionRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
 		repo = matches[3]
 		subdir = matches[4]
 		version = matches[5]
-	} else if gitSSHWithPathRegex.MatchString(p) {
+	case gitSSHWithPathRegex.MatchString(p):
 		matches := gitSSHWithPathRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
 		repo = matches[3]
 		subdir = matches[4]
-	} else if gitSSHWithVersionRegex.MatchString(p) {
+	case gitSSHWithVersionRegex.MatchString(p):
 		matches := gitSSHWithVersionRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
 		repo = matches[3]
 		version = matches[4]
-	} else {
+	default:
 		matches := gitSSHRegex.FindStringSubmatch(p)
 		host = matches[1]
 		org = matches[2]
@@ -212,16 +212,6 @@ func parseGithubDependency(p string) *spec.Dependency {
 }
 
 func parseLocalDependency(dir, p string) *spec.Dependency {
-	if p == "" {
-		return nil
-	}
-	if strings.HasPrefix(p, "github.com") {
-		return nil
-	}
-	if strings.HasPrefix(p, "git+ssh") {
-		return nil
-	}
-
 	clean := filepath.Clean(p)
 	abs := filepath.Join(dir, clean)
 

@@ -21,8 +21,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 )
 
 func TestInstallCommand(t *testing.T) {
@@ -43,7 +44,7 @@ func TestInstallCommand(t *testing.T) {
 			URIs:                    []string{"github.com/jsonnet-bundler/jsonnet-bundler@v0.1.0"},
 			ExpectedCode:            0,
 			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}]}`),
-			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f"}]}`),
+			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f", "sum": "W1uI550rQ66axRpPXA2EZDquyPg/5PHZlvUz1NEzefg="}]}`),
 		}, {
 			Name:                    "Relative",
 			URIs:                    []string{"jsonnet/foobar"},
@@ -73,7 +74,7 @@ func TestInstallCommand(t *testing.T) {
 
 			jsonnetFileContent(t, jsonnetfile.File, []byte(`{}`))
 
-			installCommand("", "vendor", tc.URIs...)
+			installCommand("", "vendor", tc.URIs)
 
 			jsonnetFileContent(t, jsonnetfile.File, tc.ExpectedJsonnetFile)
 			jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)

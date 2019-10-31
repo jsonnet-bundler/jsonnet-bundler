@@ -15,104 +15,79 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
+
+	"github.com/pkg/errors"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-func installCommand(dir, jsonnetHome string, uris ...string) int {
+func installCommand(dir, jsonnetHome string, uris []string) int {
 	if dir == "" {
 		dir = "."
 	}
 
-	filename, isLock, err := jsonnetfile.Choose(dir)
-	if err != nil {
-		kingpin.Fatalf("failed to choose jsonnetfile: %v", err)
-		return 1
+	jsonnetFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.File))
+	kingpin.FatalIfError(err, "failed to load jsonnetfile")
+
+	lockFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.LockFile))
+	if !os.IsNotExist(err) {
+		kingpin.FatalIfError(err, "failed to load lockfile")
 	}
 
-	jsonnetFile, err := jsonnetfile.Load(filename)
-	if err != nil {
-		kingpin.Fatalf("failed to load jsonnetfile: %v", err)
-		return 1
-	}
+	kingpin.FatalIfError(
+		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
+		"creating vendor folder")
 
-	if len(uris) > 0 {
-		for _, uri := range uris {
-			newDep := parseDependency(dir, uri)
-			if newDep == nil {
-				kingpin.Errorf("ignoring unrecognized uri: %s", uri)
-				continue
-			}
+	for _, u := range uris {
+		d := parseDependency(dir, u)
+		if d == nil {
+			kingpin.Fatalf("Unable to parse package URI `%s`", u)
+		}
 
-			oldDeps := jsonnetFile.Dependencies
-			newDeps := []spec.Dependency{}
-			oldDepReplaced := false
-			for _, d := range oldDeps {
-				if d.Name == newDep.Name {
-					newDeps = append(newDeps, *newDep)
-					oldDepReplaced = true
-				} else {
-					newDeps = append(newDeps, d)
-				}
-			}
+		if !depEqual(jsonnetFile.Dependencies[d.Name], *d) {
+			// the dep passed on the cli is different from the jsonnetFile
+			jsonnetFile.Dependencies[d.Name] = *d
 
-			if !oldDepReplaced {
-				newDeps = append(newDeps, *newDep)
-			}
-
-			jsonnetFile.Dependencies = newDeps
+			// we want to install the passed version (ignore the lock)
+			delete(lockFile.Dependencies, d.Name)
 		}
 	}
 
-	srcPath := filepath.Join(jsonnetHome)
-	err = os.MkdirAll(srcPath, os.ModePerm)
-	if err != nil {
-		kingpin.Fatalf("failed to create jsonnet home path: %v", err)
-		return 3
-	}
+	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, lockFile.Dependencies)
+	kingpin.FatalIfError(err, "failed to install packages")
 
-	lock, err := pkg.Install(context.TODO(), isLock, filename, jsonnetFile, jsonnetHome)
-	if err != nil {
-		kingpin.Fatalf("failed to install: %v", err)
-		return 3
-	}
-
-	// If installing from lock file there is no need to write any files back.
-	if !isLock {
-		b, err := json.MarshalIndent(jsonnetFile, "", "    ")
-		if err != nil {
-			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
-			return 3
-		}
-		b = append(b, []byte("\n")...)
-
-		err = ioutil.WriteFile(filepath.Join(dir, jsonnetfile.File), b, 0644)
-		if err != nil {
-			kingpin.Fatalf("failed to write jsonnet file: %v", err)
-			return 3
-		}
-
-		b, err = json.MarshalIndent(lock, "", "    ")
-		if err != nil {
-			kingpin.Fatalf("failed to encode jsonnet file: %v", err)
-			return 3
-		}
-		b = append(b, []byte("\n")...)
-
-		err = ioutil.WriteFile(filepath.Join(dir, jsonnetfile.LockFile), b, 0644)
-		if err != nil {
-			kingpin.Fatalf("failed to write lock file: %v", err)
-			return 3
-		}
-	}
+	kingpin.FatalIfError(
+		writeJSONFile(filepath.Join(dir, jsonnetfile.File), jsonnetFile),
+		"updating jsonnetfile.json")
+	kingpin.FatalIfError(
+		writeJSONFile(filepath.Join(dir, jsonnetfile.LockFile), spec.JsonnetFile{Dependencies: locked}),
+		"updating jsonnetfile.lock.json")
 
 	return 0
+}
+
+func depEqual(d1, d2 spec.Dependency) bool {
+	name := d1.Name == d2.Name
+	version := d1.Version == d2.Version
+	source := reflect.DeepEqual(d1.Source, d2.Source)
+
+	return name && version && source
+}
+
+func writeJSONFile(name string, d interface{}) error {
+	b, err := json.MarshalIndent(d, "", "  ")
+	if err != nil {
+		return errors.Wrap(err, "encoding json")
+	}
+	b = append(b, []byte("\n")...)
+
+	return ioutil.WriteFile(name, b, 0644)
 }

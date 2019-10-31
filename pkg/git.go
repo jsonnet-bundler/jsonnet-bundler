@@ -31,8 +31,9 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/pkg/errors"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 )
 
 type GitPackage struct {

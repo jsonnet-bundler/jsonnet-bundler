@@ -35,10 +35,9 @@ func TestInstallCommand(t *testing.T) {
 		ExpectedJsonnetLockFile []byte
 	}{
 		{
-			Name:                    "NoURLs",
-			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"dependencies":null}`),
-			ExpectedJsonnetLockFile: []byte(`{"dependencies":null}`),
+			Name:                "NoURLs",
+			ExpectedCode:        0,
+			ExpectedJsonnetFile: []byte(`{}`),
 		}, {
 			Name:                    "OneURL",
 			URIs:                    []string{"github.com/jsonnet-bundler/jsonnet-bundler@v0.1.0"},
@@ -77,7 +76,9 @@ func TestInstallCommand(t *testing.T) {
 			installCommand("", "vendor", tc.URIs)
 
 			jsonnetFileContent(t, jsonnetfile.File, tc.ExpectedJsonnetFile)
-			jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)
+			if tc.ExpectedJsonnetLockFile != nil {
+				jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)
+			}
 		})
 	}
 

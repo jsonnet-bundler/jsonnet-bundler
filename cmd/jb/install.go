@@ -34,13 +34,27 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 		dir = "."
 	}
 
-	jsonnetFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.File))
+	jsonnetfilebytes, err := ioutil.ReadFile(filepath.Join(dir, jsonnetfile.File))
 	kingpin.FatalIfError(err, "failed to load jsonnetfile")
 
-	lockFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.LockFile))
+	jsonnetFile, err := jsonnetfile.UnmarshalJsonnetBytes(jsonnetfilebytes)
+	kingpin.FatalIfError(err, "")
+
+	// keep a copy
+	origJsonnetFile, err := jsonnetfile.UnmarshalJsonnetBytes(jsonnetfilebytes)
+	kingpin.FatalIfError(err, "")
+
+	jsonnetlockfilebytes, err := ioutil.ReadFile(filepath.Join(dir, jsonnetfile.LockFile))
 	if !os.IsNotExist(err) {
 		kingpin.FatalIfError(err, "failed to load lockfile")
 	}
+
+	lockFile, err := jsonnetfile.UnmarshalJsonnetBytes(jsonnetlockfilebytes)
+	kingpin.FatalIfError(err, "")
+
+	// keep a copy
+	origjsonnetLockFile, err := jsonnetfile.UnmarshalJsonnetBytes(jsonnetlockfilebytes)
+	kingpin.FatalIfError(err, "")
 
 	kingpin.FatalIfError(
 		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
@@ -64,12 +78,17 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, lockFile.Dependencies)
 	kingpin.FatalIfError(err, "failed to install packages")
 
-	kingpin.FatalIfError(
-		writeJSONFile(filepath.Join(dir, jsonnetfile.File), jsonnetFile),
-		"updating jsonnetfile.json")
-	kingpin.FatalIfError(
-		writeJSONFile(filepath.Join(dir, jsonnetfile.LockFile), spec.JsonnetFile{Dependencies: locked}),
-		"updating jsonnetfile.lock.json")
+	if jsonnetfileChanged(&origJsonnetFile, &jsonnetFile) {
+		kingpin.FatalIfError(
+			writeJSONFile(filepath.Join(dir, jsonnetfile.File), jsonnetFile),
+			"updating jsonnetfile.json")
+	}
+
+	if jsonnetfileChanged(&origjsonnetLockFile, &spec.JsonnetFile{Dependencies: locked}) {
+		kingpin.FatalIfError(
+			writeJSONFile(filepath.Join(dir, jsonnetfile.LockFile), spec.JsonnetFile{Dependencies: locked}),
+			"updating jsonnetfile.lock.json")
+	}
 
 	return 0
 }
@@ -90,4 +109,8 @@ func writeJSONFile(name string, d interface{}) error {
 	b = append(b, []byte("\n")...)
 
 	return ioutil.WriteFile(name, b, 0644)
+}
+
+func jsonnetfileChanged(original *spec.JsonnetFile, modified *spec.JsonnetFile) bool {
+	return !reflect.DeepEqual(original, modified)
 }

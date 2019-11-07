@@ -241,7 +241,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	}
 
 	// Attempt shallow fetch at specific revision
-	cmd = exec.CommandContext(ctx, "git", "fetch", "--depth", "1", "origin", version)
+	cmd = exec.CommandContext(ctx, "git", "fetch", "--tags", "--depth", "1", "origin", version)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

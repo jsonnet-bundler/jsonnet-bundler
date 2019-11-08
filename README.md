@@ -8,9 +8,12 @@ The jsonnet-bundler is a package manager for [Jsonnet](http://jsonnet.org/).
 ## Install
 
 ```
-go get github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
+GO111MODULE="on" go get github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
 ```
+**NOTE**: please use a recent Go version to do this, ideally Go 1.13 or greater.
 
+This will put `jb` in `$(go env GOPATH)/bin`. If you encounter the error
+`jb: command not found` after installation then you may need to add that directory to your `$PATH` as shown [in their docs](https://golang.org/doc/code.html#GOPATH).
 
 ## Features
 

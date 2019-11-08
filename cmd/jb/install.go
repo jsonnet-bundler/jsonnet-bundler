@@ -37,7 +37,7 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 	jbfilebytes, err := ioutil.ReadFile(filepath.Join(dir, jsonnetfile.File))
 	kingpin.FatalIfError(err, "failed to load jsonnetfile")
 
-	jsonnetFile, err := jsonnetfile.UnmarshalBytes(jbfilebytes)
+	jsonnetFile, err := jsonnetfile.Unmarshal(jbfilebytes)
 	kingpin.FatalIfError(err, "")
 
 	jblockfilebytes, err := ioutil.ReadFile(filepath.Join(dir, jsonnetfile.LockFile))
@@ -45,7 +45,7 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 		kingpin.FatalIfError(err, "failed to load lockfile")
 	}
 
-	lockFile, err := jsonnetfile.UnmarshalBytes(jblockfilebytes)
+	lockFile, err := jsonnetfile.Unmarshal(jblockfilebytes)
 	kingpin.FatalIfError(err, "")
 
 	kingpin.FatalIfError(
@@ -100,7 +100,7 @@ func writeJSONFile(name string, d interface{}) error {
 }
 
 func writeChangedJsonnetFile(originalBytes []byte, modified *spec.JsonnetFile, path string) error {
-	origJsonnetFile, err := jsonnetfile.UnmarshalBytes(originalBytes)
+	origJsonnetFile, err := jsonnetfile.Unmarshal(originalBytes)
 	if err != nil {
 		return err
 	}

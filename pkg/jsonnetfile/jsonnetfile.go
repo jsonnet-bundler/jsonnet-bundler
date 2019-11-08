@@ -38,12 +38,12 @@ func Load(filepath string) (spec.JsonnetFile, error) {
 		return spec.New(), err
 	}
 
-	return UnmarshalBytes(bytes)
+	return Unmarshal(bytes)
 }
 
-// UnmarshalBytes creates a spec.JsonnetFile from bytes. Empty bytes
+// Unmarshal creates a spec.JsonnetFile from bytes. Empty bytes
 // will create an empty spec.
-func UnmarshalBytes(bytes []byte) (spec.JsonnetFile, error) {
+func Unmarshal(bytes []byte) (spec.JsonnetFile, error) {
 	m := spec.New()
 	if len(bytes) == 0 {
 		return m, nil

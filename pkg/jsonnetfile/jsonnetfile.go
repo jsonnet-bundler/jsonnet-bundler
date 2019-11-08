@@ -33,13 +33,21 @@ var ErrNoFile = errors.New("no jsonnetfile")
 
 // Load reads a jsonnetfile.(lock).json from disk
 func Load(filepath string) (spec.JsonnetFile, error) {
-	m := spec.New()
-
 	bytes, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return m, err
+		return spec.New(), err
 	}
 
+	return Unmarshal(bytes)
+}
+
+// Unmarshal creates a spec.JsonnetFile from bytes. Empty bytes
+// will create an empty spec.
+func Unmarshal(bytes []byte) (spec.JsonnetFile, error) {
+	m := spec.New()
+	if len(bytes) == 0 {
+		return m, nil
+	}
 	if err := json.Unmarshal(bytes, &m); err != nil {
 		return m, errors.Wrap(err, "failed to unmarshal file")
 	}

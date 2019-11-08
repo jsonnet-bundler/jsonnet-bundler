@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 )
 
 func TestInstallCommand(t *testing.T) {
@@ -35,10 +36,9 @@ func TestInstallCommand(t *testing.T) {
 		ExpectedJsonnetLockFile []byte
 	}{
 		{
-			Name:                    "NoURLs",
-			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"dependencies":null}`),
-			ExpectedJsonnetLockFile: []byte(`{"dependencies":null}`),
+			Name:                "NoURLs",
+			ExpectedCode:        0,
+			ExpectedJsonnetFile: []byte(`{}`),
 		}, {
 			Name:                    "OneURL",
 			URIs:                    []string{"github.com/jsonnet-bundler/jsonnet-bundler@v0.1.0"},
@@ -77,7 +77,9 @@ func TestInstallCommand(t *testing.T) {
 			installCommand("", "vendor", tc.URIs)
 
 			jsonnetFileContent(t, jsonnetfile.File, tc.ExpectedJsonnetFile)
-			jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)
+			if tc.ExpectedJsonnetLockFile != nil {
+				jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)
+			}
 		})
 	}
 
@@ -91,5 +93,87 @@ func jsonnetFileContent(t *testing.T, filename string, content []byte) {
 	assert.NoError(t, err)
 	if eq := assert.JSONEq(t, string(content), string(bytes)); !eq {
 		t.Log(string(bytes))
+	}
+}
+
+func TestWriteChangedJsonnetFile(t *testing.T) {
+	testcases := []struct {
+		Name             string
+		JsonnetFileBytes []byte
+		NewJsonnetFile   spec.JsonnetFile
+		ExpectWrite      bool
+	}{
+		{
+			Name:             "NoDiffEmpty",
+			JsonnetFileBytes: []byte(`{}`),
+			NewJsonnetFile:   spec.New(),
+			ExpectWrite:      false,
+		},
+		{
+			Name:             "NoDiffNotEmpty",
+			JsonnetFileBytes: []byte(`{"dependencies": [{"name": "foobar"}]}`),
+			NewJsonnetFile: spec.JsonnetFile{
+				Dependencies: map[string]spec.Dependency{
+					"foobar": {
+						Name: "foobar",
+					},
+				},
+			},
+			ExpectWrite: false,
+		},
+		{
+			Name:             "DiffVersion",
+			JsonnetFileBytes: []byte(`{"dependencies": [{"name": "foobar", "version": "1.0"}]}`),
+			NewJsonnetFile: spec.JsonnetFile{
+				Dependencies: map[string]spec.Dependency{
+					"foobar": {
+						Name:    "foobar",
+						Version: "2.0",
+					},
+				},
+			},
+			ExpectWrite: true,
+		},
+		{
+			Name:             "Diff",
+			JsonnetFileBytes: []byte(`{}`),
+			NewJsonnetFile: spec.JsonnetFile{
+				Dependencies: map[string]spec.Dependency{
+					"foobar": {
+						Name: "foobar",
+						Source: spec.Source{
+							GitSource: &spec.GitSource{
+								Remote: "https://github.com/foobar/foobar",
+								Subdir: "",
+							},
+						},
+						Version:   "master",
+						DepSource: "",
+					}},
+			},
+			ExpectWrite: true,
+		},
+	}
+	outputjsonnetfile := "changedjsonnet.json"
+	for _, tc := range testcases {
+		_ = t.Run(tc.Name, func(t *testing.T) {
+			clean := func() {
+				_ = os.Remove(outputjsonnetfile)
+			}
+			clean()
+			defer clean()
+
+			err := writeChangedJsonnetFile(tc.JsonnetFileBytes, &tc.NewJsonnetFile, outputjsonnetfile)
+			assert.NoError(t, err)
+
+			if tc.ExpectWrite {
+				assert.FileExists(t, outputjsonnetfile)
+			} else {
+				_, err := os.Lstat(outputjsonnetfile)
+				if err != nil {
+					assert.True(t, os.IsNotExist(err))
+				}
+			}
+		})
 	}
 }

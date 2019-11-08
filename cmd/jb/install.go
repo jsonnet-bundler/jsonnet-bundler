@@ -34,13 +34,19 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 		dir = "."
 	}
 
-	jsonnetFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.File))
+	jbfilebytes, err := ioutil.ReadFile(filepath.Join(dir, jsonnetfile.File))
 	kingpin.FatalIfError(err, "failed to load jsonnetfile")
 
-	lockFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.LockFile))
+	jsonnetFile, err := jsonnetfile.Unmarshal(jbfilebytes)
+	kingpin.FatalIfError(err, "")
+
+	jblockfilebytes, err := ioutil.ReadFile(filepath.Join(dir, jsonnetfile.LockFile))
 	if !os.IsNotExist(err) {
 		kingpin.FatalIfError(err, "failed to load lockfile")
 	}
+
+	lockFile, err := jsonnetfile.Unmarshal(jblockfilebytes)
+	kingpin.FatalIfError(err, "")
 
 	kingpin.FatalIfError(
 		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
@@ -65,10 +71,11 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 	kingpin.FatalIfError(err, "failed to install packages")
 
 	kingpin.FatalIfError(
-		writeJSONFile(filepath.Join(dir, jsonnetfile.File), jsonnetFile),
+		writeChangedJsonnetFile(jbfilebytes, &jsonnetFile, filepath.Join(dir, jsonnetfile.File)),
 		"updating jsonnetfile.json")
+
 	kingpin.FatalIfError(
-		writeJSONFile(filepath.Join(dir, jsonnetfile.LockFile), spec.JsonnetFile{Dependencies: locked}),
+		writeChangedJsonnetFile(jblockfilebytes, &spec.JsonnetFile{Dependencies: locked}, filepath.Join(dir, jsonnetfile.LockFile)),
 		"updating jsonnetfile.lock.json")
 
 	return 0
@@ -90,4 +97,17 @@ func writeJSONFile(name string, d interface{}) error {
 	b = append(b, []byte("\n")...)
 
 	return ioutil.WriteFile(name, b, 0644)
+}
+
+func writeChangedJsonnetFile(originalBytes []byte, modified *spec.JsonnetFile, path string) error {
+	origJsonnetFile, err := jsonnetfile.Unmarshal(originalBytes)
+	if err != nil {
+		return err
+	}
+
+	if reflect.DeepEqual(origJsonnetFile, *modified) {
+		return nil
+	}
+
+	return writeJSONFile(path, *modified)
 }

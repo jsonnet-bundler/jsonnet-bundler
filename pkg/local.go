@@ -16,11 +16,11 @@ package pkg
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/pkg/errors"
 )
 
 type LocalPackage struct {
@@ -36,7 +36,7 @@ func NewLocalPackage(source *spec.LocalSource) Interface {
 func (p *LocalPackage) Install(ctx context.Context, name, dir, version string) (lockVersion string, err error) {
 	wd, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("failed to get current working directory: %w", err)
+		return "", errors.Wrap(err, "failed to get current working directory: %w")
 	}
 
 	oldname := filepath.Join(wd, p.Source.Directory)
@@ -44,17 +44,17 @@ func (p *LocalPackage) Install(ctx context.Context, name, dir, version string) (
 
 	err = os.RemoveAll(newname)
 	if err != nil {
-		return "", fmt.Errorf("failed to clean previous destination path: %w", err)
+		return "", errors.Wrap(err, "failed to clean previous destination path: %w")
 	}
 
 	_, err = os.Stat(oldname)
 	if os.IsNotExist(err) {
-		return "", fmt.Errorf("symlink destination path does not exist: %w", err)
+		return "", errors.Wrap(err, "symlink destination path does not exist: %w")
 	}
 
 	err = os.Symlink(oldname, newname)
 	if err != nil {
-		return "", fmt.Errorf("failed to create symlink for local dependency: %w", err)
+		return "", errors.Wrap(err, "failed to create symlink for local dependency: %w")
 	}
 
 	return "", nil

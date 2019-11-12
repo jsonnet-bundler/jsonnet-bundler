@@ -1,6 +1,6 @@
 ---
 kind: pipeline
-name: build
+name: go1.13
 
 platform:
   os: linux
@@ -39,6 +39,112 @@ steps:
 - name: generate
   pull: always
   image: golang:1.13
+  commands:
+  - make check-license
+  - make generate
+  - git diff --exit-code
+  environment:
+    CGO_ENABLED: 0
+    GO111MODULE: on
+  when:
+    event:
+      exclude:
+      - tag
+
+---
+kind: pipeline
+name: go1.12
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: gomod
+  pull: always
+  image: golang:1.12
+  commands:
+  - go mod vendor
+  - git diff --exit-code
+  environment:
+    CGO_ENABLED: 0
+    GO111MODULE: on
+  when:
+    event:
+      exclude:
+      - tag
+
+- name: build
+  pull: always
+  image: golang:1.12
+  commands:
+  - make build
+  - make test
+  - make test-integration
+  environment:
+    CGO_ENABLED: 0
+    GO111MODULE: on
+  when:
+    event:
+      exclude:
+      - tag
+
+- name: generate
+  pull: always
+  image: golang:1.12
+  commands:
+  - make check-license
+  - make generate
+  - git diff --exit-code
+  environment:
+    CGO_ENABLED: 0
+    GO111MODULE: on
+  when:
+    event:
+      exclude:
+      - tag
+
+---
+kind: pipeline
+name: go1.11
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: gomod
+  pull: always
+  image: golang:1.11
+  commands:
+  - go mod vendor
+  - git diff --exit-code
+  environment:
+    CGO_ENABLED: 0
+    GO111MODULE: on
+  when:
+    event:
+      exclude:
+      - tag
+
+- name: build
+  pull: always
+  image: golang:1.11
+  commands:
+  - make build
+  - make test
+  - make test-integration
+  environment:
+    CGO_ENABLED: 0
+    GO111MODULE: on
+  when:
+    event:
+      exclude:
+      - tag
+
+- name: generate
+  pull: always
+  image: golang:1.11
   commands:
   - make check-license
   - make generate

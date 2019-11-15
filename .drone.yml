@@ -25,7 +25,7 @@ steps:
       CGO_ENABLED: '0'
       GO111MODULE: 'on'
     image: golang:1.13
-    name: build
+    name: build-1.13
     pull: always
     when:
       event:
@@ -39,7 +39,7 @@ steps:
       CGO_ENABLED: '0'
       GO111MODULE: 'on'
     image: golang:1.12
-    name: build
+    name: build-1.12
     pull: always
     when:
       event:
@@ -53,7 +53,7 @@ steps:
       CGO_ENABLED: '0'
       GO111MODULE: 'on'
     image: golang:1.11
-    name: build
+    name: build-1.11
     pull: always
     when:
       event:

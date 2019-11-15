@@ -22,12 +22,13 @@
   },
 
   local build(version) = golang(version) {
-    name: 'build',
+    name: 'build-%s' % version,
     commands: [
       'make build',
       'make test',
       'make test-integration',
     ],
+    depends_on: ["gomod"]
   },
 
   steps: [

@@ -124,23 +124,30 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 			}
 
 		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err := os.MkdirAll(filepath.Dir(target), os.ModePerm); err != nil {
+				return err
+			}
+
+			err := func() error {
+				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+
+				// copy over contents
+				if _, err := io.Copy(f, tr); err != nil {
+					return err
+				}
+				return nil
+			}()
+
 			if err != nil {
 				return err
 			}
 
-			// copy over contents
-			if _, err := io.Copy(f, tr); err != nil {
-				return err
-			}
-
-			// Explicitly release the file handle inside the inner loop
-			// Using defer would accumulate an unbounded quantity of
-			// handles and release them all at once at function end.
-			f.Close()
-
 		case tar.TypeSymlink:
-			if err := os.MkdirAll(filepath.Dir(target), os.FileMode(header.Mode)); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), os.ModePerm); err != nil {
 				return err
 			}
 
@@ -196,12 +203,13 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		defer os.Remove(archiveFilepath)
 		err = downloadGitHubArchive(archiveFilepath, archiveUrl)
 		if err == nil {
-			r, err := os.Open(archiveFilepath)
-			defer r.Close()
+			var ar *os.File
+			ar, err = os.Open(archiveFilepath)
+			defer ar.Close()
 			if err == nil {
 				// Extract the sub-directory (if any) from the archive
 				// If none specified, the entire archive is unpacked
-				err = gzipUntar(tmpDir, r, p.Source.Subdir)
+				err = gzipUntar(tmpDir, ar, p.Source.Subdir)
 
 				// Move the extracted directory to its final destination
 				if err == nil {

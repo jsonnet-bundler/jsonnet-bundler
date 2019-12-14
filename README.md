@@ -87,11 +87,9 @@ usage: jb [<flags>] <command> [<args> ...]
 A jsonnet package manager
 
 Flags:
-  -h, --help     Show context-sensitive help (also try --help-long and
-                 --help-man).
-      --version  Show application version.
+  -h, --help  Show context-sensitive help (also try --help-long and --help-man).
       --jsonnetpkg-home="vendor"  
-                 The directory used to cache packages in.
+              The directory used to cache packages in.
 
 Commands:
   help [<command>...]

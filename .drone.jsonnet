@@ -1,54 +1,57 @@
-[
-  {
-    kind: 'pipeline',
-    name: 'go%s' % version,
-    platform: {
-      os: 'linux',
-      arch: 'amd64',
-    },
+{
+  kind: 'pipeline',
+  name: 'default',
+  platform: {
+    os: 'linux',
+    arch: 'amd64',
+  },
 
-    local golang = {
-      name: 'golang',
-      image: 'golang:%s' % version,
-      pull: 'always',
-      environment: {
-        CGO_ENABLED: '0',
-        GO111MODULE: 'on',
-      },
-      when: {
-        event: {
-          exclude: ['tag'],
-        },
+  local golang(version='latest') = {
+    name: 'golang',
+    image: 'golang:%s' % version,
+    pull: 'always',
+    environment: {
+      CGO_ENABLED: '0',
+      GO111MODULE: 'on',
+    },
+    when: {
+      event: {
+        exclude: ['tag'],
       },
     },
+  },
 
-    steps: [
-      golang {
-        name: 'gomod',
-        commands: [
-          'go mod vendor',
-          'git diff --exit-code',
-        ],
-      },
-
-      golang {
-        name: 'build',
-        commands: [
-          'make build',
-          'make test',
-          'make test-integration',
-        ],
-      },
-
-      golang {
-        name: 'generate',
-        commands: [
-          'make check-license',
-          'make generate',
-          'git diff --exit-code',
-        ],
-      },
+  local build(version) = golang(version) {
+    name: 'build-%s' % version,
+    commands: [
+      'make build',
+      'make test',
+      'make test-integration',
     ],
-  }
-  for version in ['1.13', '1.12', '1.11']
-]
+    depends_on: ["gomod"]
+  },
+
+  steps: [
+    golang() {
+      name: 'gomod',
+      commands: [
+        'go mod vendor',
+        'git diff --exit-code',
+      ],
+    },
+
+    build('1.11'),
+    build('1.12'),
+    build('1.13') + {depends_on: ["build-1.11", "build-1.12"]},
+
+    golang() {
+      name: 'generate',
+      commands: [
+        'make check-license',
+        'make generate',
+        'git diff --exit-code',
+      ],
+      depends_on: ["build-1.13"]
+    },
+  ],
+}

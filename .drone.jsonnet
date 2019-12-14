@@ -40,9 +40,9 @@
       ],
     },
 
-    build('1.13'),
-    build('1.12'),
     build('1.11'),
+    build('1.12'),
+    build('1.13') + {depends_on: ["build-1.11", "build-1.12"]},
 
     golang() {
       name: 'generate',
@@ -51,6 +51,7 @@
         'make generate',
         'git diff --exit-code',
       ],
+      depends_on: ["build-1.13"]
     },
   ],
 }

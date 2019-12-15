@@ -12,20 +12,28 @@ const (
 	GitSchemeHTTPS = "https://"
 )
 
+// Git holds all required information for cloning a package from git
 type Git struct {
+	// Scheme (Protocol) used (https, git+ssh)
 	Scheme string
 
-	Host   string
-	User   string
-	Repo   string
+	// Hostname the repo is located at
+	Host string
+	// User (github.com/<user>)
+	User string
+	// Repo (github.com/<user>/<repo>)
+	Repo string
+	// Subdir (github.com/<user>/<repo>/<subdir>)
 	Subdir string
 }
 
+// json representation of Git (for compatiblity with old format)
 type jsonGit struct {
 	Remote string `json:"remote"`
 	Subdir string `json:"subdir"`
 }
 
+// MarshalJSON takes care of translating between Git and jsonGit
 func (gs *Git) MarshalJSON() ([]byte, error) {
 	j := jsonGit{
 		Remote: gs.Remote(),
@@ -34,6 +42,7 @@ func (gs *Git) MarshalJSON() ([]byte, error) {
 	return json.Marshal(j)
 }
 
+// UnmarshalJSON takes care of translating between Git and jsonGit
 func (gs *Git) UnmarshalJSON(data []byte) error {
 	var j jsonGit
 	if err := json.Unmarshal(data, &j); err != nil {
@@ -69,16 +78,22 @@ func (gs *Git) Remote() string {
 	)
 }
 
-var (
-	gitSSHRegex                   = regexp.MustCompile(`git\+ssh://git@([^:]+):([^/]+)/([^/]+).git`)
-	gitSSHWithVersionRegex        = regexp.MustCompile(`git\+ssh://git@([^:]+):([^/]+)/([^/]+).git@(.*)`)
-	gitSSHWithPathRegex           = regexp.MustCompile(`git\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)`)
-	gitSSHWithPathAndVersionRegex = regexp.MustCompile(`git\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)@(.*)`)
+// regular expressions for matching package uris
+const (
+	gitSSHExp     = `git\+ssh://git@(?P<host>[^:]+):(?P<user>[^/]+)/(?P<repo>[^/]+).git`
+	githubSlugExp = `github.com/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
+)
 
-	githubSlugRegex                   = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)")
-	githubSlugWithVersionRegex        = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)@(.*)")
-	githubSlugWithPathRegex           = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)/(.*)")
-	githubSlugWithPathAndVersionRegex = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)/(.*)@(.*)")
+var (
+	gitSSHRegex                   = regexp.MustCompile(gitSSHExp)
+	gitSSHWithVersionRegex        = regexp.MustCompile(gitSSHExp + `@(?P<version>.*)`)
+	gitSSHWithPathRegex           = regexp.MustCompile(gitSSHExp + `/(?P<subdir>.*)`)
+	gitSSHWithPathAndVersionRegex = regexp.MustCompile(gitSSHExp + `/(?P<subdir>.*)@(?P<version>.*)`)
+
+	githubSlugRegex                   = regexp.MustCompile(githubSlugExp)
+	githubSlugWithVersionRegex        = regexp.MustCompile(githubSlugExp + `@(?P<version>.*)`)
+	githubSlugWithPathRegex           = regexp.MustCompile(githubSlugExp + `/(?P<subdir>.*)`)
+	githubSlugWithPathAndVersionRegex = regexp.MustCompile(githubSlugExp + `/(?P<subdir>.*)@(?P<version>.*)`)
 )
 
 func parseGit(uri string) *Dependency {
@@ -110,70 +125,62 @@ func parseGit(uri string) *Dependency {
 }
 
 func parseGitSSH(p string) (gs *Git, version string) {
-	gs = &Git{
-		Scheme: GitSchemeSSH,
-	}
+	gs, version = match(p, []*regexp.Regexp{
+		gitSSHWithPathAndVersionRegex,
+		gitSSHWithPathRegex,
+		gitSSHWithVersionRegex,
+		gitSSHRegex,
+	})
 
-	switch {
-	case gitSSHWithPathAndVersionRegex.MatchString(p):
-		matches := gitSSHWithPathAndVersionRegex.FindStringSubmatch(p)
-		gs.Host = matches[1]
-		gs.User = matches[2]
-		gs.Repo = matches[3]
-		gs.Subdir = matches[4]
-		version = matches[5]
-	case gitSSHWithPathRegex.MatchString(p):
-		matches := gitSSHWithPathRegex.FindStringSubmatch(p)
-		gs.Host = matches[1]
-		gs.User = matches[2]
-		gs.Repo = matches[3]
-		gs.Subdir = matches[4]
-	case gitSSHWithVersionRegex.MatchString(p):
-		matches := gitSSHWithVersionRegex.FindStringSubmatch(p)
-		gs.Host = matches[1]
-		gs.User = matches[2]
-		gs.Repo = matches[3]
-		version = matches[4]
-	default:
-		matches := gitSSHRegex.FindStringSubmatch(p)
-		gs.Host = matches[1]
-		gs.User = matches[2]
-		gs.Repo = matches[3]
-	}
-
+	gs.Scheme = GitSchemeSSH
 	return gs, version
 }
+
 func parseGitHub(p string) (gs *Git, version string) {
-	gs = &Git{
-		Scheme: GitSchemeHTTPS,
-		Host:   "github.com",
-	}
+	gs, version = match(p, []*regexp.Regexp{
+		githubSlugWithPathAndVersionRegex,
+		githubSlugWithPathRegex,
+		githubSlugWithVersionRegex,
+		githubSlugRegex,
+	})
 
-	if githubSlugWithPathRegex.MatchString(p) {
-		if githubSlugWithPathAndVersionRegex.MatchString(p) {
-			matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(p)
-			gs.User = matches[1]
-			gs.Repo = matches[2]
-			gs.Subdir = matches[3]
-			version = matches[4]
-		} else {
-			matches := githubSlugWithPathRegex.FindStringSubmatch(p)
-			gs.User = matches[1]
-			gs.Repo = matches[2]
-			gs.Subdir = matches[3]
-		}
-	} else {
-		if githubSlugWithVersionRegex.MatchString(p) {
-			matches := githubSlugWithVersionRegex.FindStringSubmatch(p)
-			gs.User = matches[1]
-			gs.Repo = matches[2]
-			version = matches[3]
-		} else {
-			matches := githubSlugRegex.FindStringSubmatch(p)
-			gs.User = matches[1]
-			gs.Repo = matches[2]
-		}
-	}
-
+	gs.Scheme = GitSchemeHTTPS
+	gs.Host = "github.com"
 	return gs, version
+}
+
+func match(p string, exps []*regexp.Regexp) (gs *Git, version string) {
+	gs = &Git{}
+	for _, e := range exps {
+		if !e.MatchString(p) {
+			continue
+		}
+
+		fmt.Println("picked", e.String())
+
+		matches := reSubMatchMap(e, p)
+		fmt.Println(matches)
+		gs.Host = matches["host"]
+		gs.User = matches["user"]
+		gs.Repo = matches["repo"]
+
+		if sd, ok := matches["subdir"]; ok {
+			gs.Subdir = sd
+		}
+
+		return gs, matches["version"]
+	}
+	return gs, ""
+}
+
+func reSubMatchMap(r *regexp.Regexp, str string) map[string]string {
+	match := r.FindStringSubmatch(str)
+	subMatchMap := make(map[string]string)
+	for i, name := range r.SubexpNames() {
+		if i != 0 {
+			subMatchMap[name] = match[i]
+		}
+	}
+
+	return subMatchMap
 }

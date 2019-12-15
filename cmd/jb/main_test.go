@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
 
 func TestParseDependency(t *testing.T) {
@@ -34,7 +34,7 @@ func TestParseDependency(t *testing.T) {
 	tests := []struct {
 		name string
 		path string
-		want *spec.Dependency
+		want *deps.Dependency
 	}{
 		{
 			name: "Empty",
@@ -49,11 +49,13 @@ func TestParseDependency(t *testing.T) {
 		{
 			name: "GitHub",
 			path: "github.com/jsonnet-bundler/jsonnet-bundler",
-			want: &spec.Dependency{
-				Name: "jsonnet-bundler",
-				Source: spec.Source{
-					GitSource: &spec.GitSource{
-						Remote: "https://github.com/jsonnet-bundler/jsonnet-bundler",
+			want: &deps.Dependency{
+				Source: deps.Source{
+					GitSource: &deps.Git{
+						Scheme: deps.GitSchemeHTTPS,
+						Host:   "github.com",
+						User:   "jsonnet-bundler",
+						Repo:   "jsonnet-bundler",
 						Subdir: "",
 					},
 				},
@@ -63,11 +65,13 @@ func TestParseDependency(t *testing.T) {
 		{
 			name: "SSH",
 			path: "git+ssh://git@github.com:jsonnet-bundler/jsonnet-bundler.git",
-			want: &spec.Dependency{
-				Name: "jsonnet-bundler",
-				Source: spec.Source{
-					GitSource: &spec.GitSource{
-						Remote: "git@github.com:jsonnet-bundler/jsonnet-bundler",
+			want: &deps.Dependency{
+				Source: deps.Source{
+					GitSource: &deps.Git{
+						Scheme: deps.GitSchemeSSH,
+						Host:   "github.com",
+						User:   "jsonnet-bundler",
+						Repo:   "jsonnet-bundler",
 						Subdir: "",
 					},
 				},
@@ -77,10 +81,9 @@ func TestParseDependency(t *testing.T) {
 		{
 			name: "local",
 			path: testFolder,
-			want: &spec.Dependency{
-				Name: "foobar",
-				Source: spec.Source{
-					LocalSource: &spec.LocalSource{
+			want: &deps.Dependency{
+				Source: deps.Source{
+					LocalSource: &deps.Local{
 						Directory: "test/jsonnet/foobar",
 					},
 				},
@@ -90,7 +93,7 @@ func TestParseDependency(t *testing.T) {
 	}
 	for _, tt := range tests {
 		_ = t.Run(tt.name, func(t *testing.T) {
-			dependency := parseDependency("", tt.path)
+			dependency := deps.Parse("", tt.path)
 
 			if tt.path == "" {
 				assert.Nil(t, dependency)

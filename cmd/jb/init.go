@@ -15,32 +15,37 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"path/filepath"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 )
 
 func initCommand(dir string) int {
 	exists, err := jsonnetfile.Exists(jsonnetfile.File)
-	if err != nil {
-		kingpin.Errorf("Failed to check for jsonnetfile.json: %v", err)
-		return 1
-	}
+	kingpin.FatalIfError(err, "Failed to check for jsonnetfile.json")
 
 	if exists {
 		kingpin.Errorf("jsonnetfile.json already exists")
 		return 1
 	}
 
+	// default to go-style for new setups
+	s := spec.New()
+	s.GoImportStyle = true
+
+	contents, err := json.MarshalIndent(s, "", "  ")
+	kingpin.FatalIfError(err, "formatting jsonnetfile contents as json")
+	contents = append(contents, []byte("\n")...)
+
 	filename := filepath.Join(dir, jsonnetfile.File)
 
-	if err := ioutil.WriteFile(filename, []byte("{}\n"), 0644); err != nil {
-		kingpin.Errorf("Failed to write new jsonnetfile.json: %v", err)
-		return 1
-	}
+	ioutil.WriteFile(filename, contents, 0644)
+	kingpin.FatalIfError(err, "Failed to write new jsonnetfile.json")
 
 	return 0
 }

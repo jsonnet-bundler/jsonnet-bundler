@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
 
 const (
@@ -52,7 +53,7 @@ func Unmarshal(bytes []byte) (spec.JsonnetFile, error) {
 		return m, errors.Wrap(err, "failed to unmarshal file")
 	}
 	if m.Dependencies == nil {
-		m.Dependencies = make(map[string]spec.Dependency)
+		m.Dependencies = make(map[string]deps.Dependency)
 	}
 
 	return m, nil

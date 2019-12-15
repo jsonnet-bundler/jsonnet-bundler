@@ -18,14 +18,15 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const jsonJF = `{
+  "goImportStyle": true,
   "dependencies": [
     {
-      "name": "grafana-builder",
       "source": {
         "git": {
           "remote": "https://github.com/grafana/jsonnet-libs",
@@ -36,7 +37,6 @@ const jsonJF = `{
       "sum": "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE="
     },
     {
-      "name": "prometheus-mixin",
       "source": {
         "git": {
           "remote": "https://github.com/prometheus/prometheus",
@@ -51,24 +51,29 @@ const jsonJF = `{
 
 func testData() JsonnetFile {
 	return JsonnetFile{
-		Dependencies: map[string]Dependency{
-			"grafana-builder": {
-				Name: "grafana-builder",
-				Source: Source{
-					GitSource: &GitSource{
-						Remote: "https://github.com/grafana/jsonnet-libs",
-						Subdir: "grafana-builder",
+		GoImportStyle: true,
+		Dependencies: map[string]deps.Dependency{
+			"github.com/grafana/jsonnet-libs/grafana-builder": {
+				Source: deps.Source{
+					GitSource: &deps.Git{
+						Scheme: deps.GitSchemeHTTPS,
+						Host:   "github.com",
+						User:   "grafana",
+						Repo:   "jsonnet-libs",
+						Subdir: "/grafana-builder",
 					},
 				},
 				Version: "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
 				Sum:     "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
 			},
-			"prometheus-mixin": {
-				Name: "prometheus-mixin",
-				Source: Source{
-					GitSource: &GitSource{
-						Remote: "https://github.com/prometheus/prometheus",
-						Subdir: "documentation/prometheus-mixin",
+			"github.com/prometheus/prometheus/documentation/prometheus-mixin": {
+				Source: deps.Source{
+					GitSource: &deps.Git{
+						Scheme: deps.GitSchemeHTTPS,
+						Host:   "github.com",
+						User:   "prometheus",
+						Repo:   "prometheus",
+						Subdir: "/documentation/prometheus-mixin",
 					},
 				},
 				Version: "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",

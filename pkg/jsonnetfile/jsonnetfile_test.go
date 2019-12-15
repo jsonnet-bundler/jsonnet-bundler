@@ -24,6 +24,7 @@ import (
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
 
 const notExist = "/this/does/not/exist"
@@ -34,7 +35,6 @@ func TestLoad(t *testing.T) {
 	jsonnetfileContent := `{
     "dependencies": [
         {
-            "name": "foobar",
             "source": {
                 "git": {
                     "remote": "https://github.com/foobar/foobar",
@@ -47,17 +47,18 @@ func TestLoad(t *testing.T) {
 }
 `
 	jsonnetFileExpected := spec.JsonnetFile{
-		Dependencies: map[string]spec.Dependency{
-			"foobar": {
-				Name: "foobar",
-				Source: spec.Source{
-					GitSource: &spec.GitSource{
-						Remote: "https://github.com/foobar/foobar",
+		Dependencies: map[string]deps.Dependency{
+			"github.com/foobar/foobar": {
+				Source: deps.Source{
+					GitSource: &deps.Git{
+						Scheme: deps.GitSchemeHTTPS,
+						Host:   "github.com",
+						User:   "foobar",
+						Repo:   "foobar",
 						Subdir: "",
 					},
 				},
-				Version:   "master",
-				DepSource: "",
+				Version: "master",
 			}},
 	}
 
@@ -67,7 +68,7 @@ func TestLoad(t *testing.T) {
 		assert.Error(t, err)
 	}
 	{
-		tempDir, err := ioutil.TempDir("", "jb-load-jsonnetfile")
+		tempDir, err := ioutil.TempDir("", "jb-load-empty")
 		if err != nil {
 			t.Fatal(err)
 		}

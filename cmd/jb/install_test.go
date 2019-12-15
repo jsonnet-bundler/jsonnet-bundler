@@ -25,7 +25,10 @@ import (
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
+
+const initContents = `{"goImportStyle": true, "dependencies": []}`
 
 func TestInstallCommand(t *testing.T) {
 	testcases := []struct {
@@ -38,19 +41,21 @@ func TestInstallCommand(t *testing.T) {
 		{
 			Name:                "NoURLs",
 			ExpectedCode:        0,
-			ExpectedJsonnetFile: []byte(`{}`),
-		}, {
+			ExpectedJsonnetFile: []byte(initContents),
+		},
+		{
 			Name:                    "OneURL",
 			URIs:                    []string{"github.com/jsonnet-bundler/jsonnet-bundler@v0.1.0"},
 			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}]}`),
-			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "jsonnet-bundler", "source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f", "sum": "W1uI550rQ66axRpPXA2EZDquyPg/5PHZlvUz1NEzefg="}]}`),
-		}, {
+			ExpectedJsonnetFile:     []byte(`{"goImportStyle": true, "dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}]}`),
+			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f", "sum": "W1uI550rQ66axRpPXA2EZDquyPg/5PHZlvUz1NEzefg="}]}`),
+		},
+		{
 			Name:                    "Relative",
 			URIs:                    []string{"jsonnet/foobar"},
 			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}]}`),
-			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"name": "foobar", "source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}]}`),
+			ExpectedJsonnetFile:     []byte(`{"goImportStyle": true, "dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}]}`),
+			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}]}`),
 		},
 	}
 
@@ -70,12 +75,12 @@ func TestInstallCommand(t *testing.T) {
 			err := os.MkdirAll(localDependency, os.ModePerm)
 			assert.NoError(t, err)
 
+			// init + check it works correctly (goImportStyle true, empty dependencies)
 			initCommand("")
+			jsonnetFileContent(t, jsonnetfile.File, []byte(initContents))
 
-			jsonnetFileContent(t, jsonnetfile.File, []byte(`{}`))
-
+			// install something, check it writes only if required, etc.
 			installCommand("", "vendor", tc.URIs)
-
 			jsonnetFileContent(t, jsonnetfile.File, tc.ExpectedJsonnetFile)
 			if tc.ExpectedJsonnetLockFile != nil {
 				jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)
@@ -111,11 +116,11 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 		},
 		{
 			Name:             "NoDiffNotEmpty",
-			JsonnetFileBytes: []byte(`{"dependencies": [{"name": "foobar"}]}`),
+			JsonnetFileBytes: []byte(`{"dependencies": [{"version": "master"}]}`),
 			NewJsonnetFile: spec.JsonnetFile{
-				Dependencies: map[string]spec.Dependency{
-					"foobar": {
-						Name: "foobar",
+				Dependencies: map[string]deps.Dependency{
+					"": {
+						Version: "master",
 					},
 				},
 			},
@@ -123,11 +128,10 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 		},
 		{
 			Name:             "DiffVersion",
-			JsonnetFileBytes: []byte(`{"dependencies": [{"name": "foobar", "version": "1.0"}]}`),
+			JsonnetFileBytes: []byte(`{"dependencies": [{"version": "1.0"}]}`),
 			NewJsonnetFile: spec.JsonnetFile{
-				Dependencies: map[string]spec.Dependency{
-					"foobar": {
-						Name:    "foobar",
+				Dependencies: map[string]deps.Dependency{
+					"": {
 						Version: "2.0",
 					},
 				},
@@ -138,17 +142,18 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 			Name:             "Diff",
 			JsonnetFileBytes: []byte(`{}`),
 			NewJsonnetFile: spec.JsonnetFile{
-				Dependencies: map[string]spec.Dependency{
-					"foobar": {
-						Name: "foobar",
-						Source: spec.Source{
-							GitSource: &spec.GitSource{
-								Remote: "https://github.com/foobar/foobar",
+				Dependencies: map[string]deps.Dependency{
+					"github.com/foobar/foobar": {
+						Source: deps.Source{
+							GitSource: &deps.Git{
+								Scheme: deps.GitSchemeHTTPS,
+								Host:   "github.com",
+								User:   "foobar",
+								Repo:   "foobar",
 								Subdir: "",
 							},
 						},
-						Version:   "master",
-						DepSource: "",
+						Version: "master",
 					}},
 			},
 			ExpectWrite: true,

@@ -41,7 +41,7 @@ func New() JsonnetFile {
 // jsonFile is the json representation of a JsonnetFile, which is different for
 // compatibility reasons.
 type jsonFile struct {
-	GoImportStyle bool              `json:"goImportStyle"`
+	GoImportStyle bool              `json:"goImportStyle,omitempty"`
 	Dependencies  []deps.Dependency `json:"dependencies"`
 }
 

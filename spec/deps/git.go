@@ -3,9 +3,12 @@ package deps
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
+
+var GO_IMPORT_STYLE = false
 
 const (
 	GitSchemeSSH   = "ssh://git@"
@@ -63,7 +66,10 @@ func (gs *Git) UnmarshalJSON(data []byte) error {
 
 // Name returns the repository in a go-like format (github.com/user/repo/subdir)
 func (gs *Git) Name() string {
-	return fmt.Sprintf("%s/%s/%s%s", gs.Host, gs.User, gs.Repo, gs.Subdir)
+	if GO_IMPORT_STYLE {
+		return fmt.Sprintf("%s/%s/%s%s", gs.Host, gs.User, gs.Repo, gs.Subdir)
+	}
+	return filepath.Base(gs.Repo + gs.Subdir)
 }
 
 var gitProtoFmts = map[string]string{
@@ -156,10 +162,7 @@ func match(p string, exps []*regexp.Regexp) (gs *Git, version string) {
 			continue
 		}
 
-		fmt.Println("picked", e.String())
-
 		matches := reSubMatchMap(e, p)
-		fmt.Println(matches)
 		gs.Host = matches["host"]
 		gs.User = matches["user"]
 		gs.Repo = matches["repo"]

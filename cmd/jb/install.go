@@ -53,6 +53,7 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
 		"creating vendor folder")
 
+	deps.GO_IMPORT_STYLE = jsonnetFile.GoImportStyle
 	for _, u := range uris {
 		d := deps.Parse(dir, u)
 		if d == nil {

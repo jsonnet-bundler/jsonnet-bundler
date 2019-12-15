@@ -69,8 +69,6 @@ func Ensure(direct spec.JsonnetFile, vendorDir string, locks map[string]deps.Dep
 		return nil
 	})
 
-	fmt.Println(names)
-
 	for _, dir := range names {
 		name := strings.TrimPrefix(dir, "vendor/")
 		if !known(deps, name) {

@@ -13,3 +13,53 @@
 // limitations under the License.
 
 package pkg
+
+import (
+	"testing"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
+)
+
+func TestKnown(t *testing.T) {
+	deps := map[string]deps.Dependency{
+		"ksonnet-lib": deps.Dependency{
+			Source: deps.Source{GitSource: &deps.Git{
+				Scheme: deps.GitSchemeHTTPS,
+				Host:   "github.com",
+				User:   "ksonnet",
+				Repo:   "ksonnet-lib",
+				Subdir: "/ksonnet.beta.4",
+			}},
+		},
+	}
+
+	paths := []string{
+		"github.com",
+		"github.com/ksonnet",
+		"github.com/ksonnet/ksonnet-lib",
+		"github.com/ksonnet/ksonnet-lib/ksonnet.beta.4",
+		"github.com/ksonnet/ksonnet-lib/ksonnet.beta.4/k.libsonnet",
+		"github.com/ksonnet-util", // don't know that one
+		"ksonnet.beta.4",          // the symlink
+	}
+
+	want := []string{
+		"github.com",
+		"github.com/ksonnet",
+		"github.com/ksonnet/ksonnet",
+		"github.com/ksonnet/ksonnet-lib",
+		"github.com/ksonnet/ksonnet-lib/ksonnet.beta.4",
+		"github.com/ksonnet/ksonnet-lib/ksonnet.beta.4/k.libsonnet",
+	}
+
+	w := make(map[string]bool)
+	for _, k := range want {
+		w[k] = true
+	}
+
+	for _, p := range paths {
+		if known(deps, p) != w[p] {
+			t.Fatalf("expected %s to be %v", p, w[p])
+		}
+	}
+}

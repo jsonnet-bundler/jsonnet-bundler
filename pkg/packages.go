@@ -57,7 +57,7 @@ func Ensure(direct spec.JsonnetFile, vendorDir string, locks map[string]deps.Dep
 
 	// cleanup unknown dirs from vendor/
 	names := []string{}
-	filepath.Walk(vendorDir, func(path string, i os.FileInfo, err error) error {
+	err = filepath.Walk(vendorDir, func(path string, i os.FileInfo, err error) error {
 		if path == vendorDir {
 			return nil
 		}
@@ -81,12 +81,81 @@ func Ensure(direct spec.JsonnetFile, vendorDir string, locks map[string]deps.Dep
 		}
 	}
 
+	if err := linkLegacy(vendorDir, locks); err != nil {
+		return nil, err
+	}
+
 	// return the final lockfile contents
 	return deps, nil
 }
 
+func linkLegacy(vendorDir string, locks map[string]deps.Dependency) error {
+	// remove all symlinks first
+	if err := filepath.Walk(vendorDir, func(path string, i os.FileInfo, err error) error {
+		if i.Mode()&os.ModeSymlink != 0 {
+			if err := os.Remove(path); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	// create only the ones we want
+	for _, d := range locks {
+		legacyName := filepath.Join("vendor", d.LegacyName())
+		pkgName := d.Name()
+
+		taken, err := checkLegacyNameTaken(legacyName, pkgName)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		if taken {
+			continue
+		}
+
+		// create the symlink
+		if err := os.Symlink(
+			filepath.Join(pkgName),
+			filepath.Join(legacyName),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func checkLegacyNameTaken(legacyName string, pkgName string) (bool, error) {
+	fi, err := os.Lstat(legacyName)
+	if err != nil {
+		// does not exist: not taken
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		// a real error
+		return false, err
+	}
+
+	// is it a symlink?
+	if fi.Mode()&os.ModeSymlink != 0 {
+		s, err := os.Readlink(legacyName)
+		if err != nil {
+			return false, err
+		}
+		color.Yellow("WARN: cannot link '%s' to '%s', because package '%s' already uses that name. The absolute import still works\n", pkgName, legacyName, s)
+		return true, nil
+	}
+
+	// sth else
+	color.Yellow("WARN: cannot link '%s' to '%s', because the file/directory already exists. The absolute import still works.\n", pkgName, legacyName)
+	return true, nil
+}
+
 func known(deps map[string]deps.Dependency, p string) bool {
-	for k := range deps {
+	for _, d := range deps {
+		k := d.Name()
 		if strings.HasPrefix(p, k) || strings.HasPrefix(k, p) {
 			return true
 		}

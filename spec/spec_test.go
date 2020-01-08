@@ -24,7 +24,6 @@ import (
 )
 
 const jsonJF = `{
-  "goImportStyle": true,
   "dependencies": [
     {
       "source": {
@@ -46,12 +45,13 @@ const jsonJF = `{
       "version": "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
       "sum": "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY="
     }
-  ]
+  ],
+  "legacyImports": false
 }`
 
 func testData() JsonnetFile {
 	return JsonnetFile{
-		GoImportStyle: true,
+		LegacyImports: false,
 		Dependencies: map[string]deps.Dependency{
 			"github.com/grafana/jsonnet-libs/grafana-builder": {
 				Source: deps.Source{

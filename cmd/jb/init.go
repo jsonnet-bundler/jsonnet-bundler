@@ -34,9 +34,9 @@ func initCommand(dir string) int {
 		return 1
 	}
 
-	// default to go-style for new setups
+	// default to go-style only for new setups
 	s := spec.New()
-	s.GoImportStyle = true
+	s.LegacyImports = false
 
 	contents, err := json.MarshalIndent(s, "", "  ")
 	kingpin.FatalIfError(err, "formatting jsonnetfile contents as json")

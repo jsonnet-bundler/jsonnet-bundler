@@ -81,6 +81,12 @@ func Ensure(direct spec.JsonnetFile, vendorDir string, locks map[string]deps.Dep
 		}
 	}
 
+	if err := cleanLegacy(vendorDir); err != nil {
+		return nil, err
+	}
+	if !direct.LegacyImports {
+		return deps, nil
+	}
 	if err := linkLegacy(vendorDir, locks); err != nil {
 		return nil, err
 	}
@@ -89,19 +95,19 @@ func Ensure(direct spec.JsonnetFile, vendorDir string, locks map[string]deps.Dep
 	return deps, nil
 }
 
-func linkLegacy(vendorDir string, locks map[string]deps.Dependency) error {
+func cleanLegacy(vendorDir string) error {
 	// remove all symlinks first
-	if err := filepath.Walk(vendorDir, func(path string, i os.FileInfo, err error) error {
+	return filepath.Walk(vendorDir, func(path string, i os.FileInfo, err error) error {
 		if i.Mode()&os.ModeSymlink != 0 {
 			if err := os.Remove(path); err != nil {
 				return err
 			}
 		}
 		return nil
-	}); err != nil {
-		return err
-	}
+	})
+}
 
+func linkLegacy(vendorDir string, locks map[string]deps.Dependency) error {
 	// create only the ones we want
 	for _, d := range locks {
 		legacyName := filepath.Join("vendor", d.LegacyName())

@@ -24,15 +24,6 @@ type Dependency struct {
 	Sum     string `json:"sum,omitempty"`
 }
 
-type Source struct {
-	GitSource   *Git   `json:"git,omitempty"`
-	LocalSource *Local `json:"local,omitempty"`
-}
-
-type Local struct {
-	Directory string `json:"directory"`
-}
-
 func Parse(dir, uri string) *Dependency {
 	if uri == "" {
 		return nil
@@ -45,8 +36,17 @@ func Parse(dir, uri string) *Dependency {
 	return parseLocal(dir, uri)
 }
 
-func (d *Dependency) Name() string {
+func (d Dependency) Name() string {
 	return d.Source.Name()
+}
+
+func (d Dependency) LegacyName() string {
+	return d.Source.LegacyName()
+}
+
+type Source struct {
+	GitSource   *Git   `json:"git,omitempty"`
+	LocalSource *Local `json:"local,omitempty"`
 }
 
 func (s Source) Name() string {
@@ -54,10 +54,25 @@ func (s Source) Name() string {
 	case s.GitSource != nil:
 		return s.GitSource.Name()
 	case s.LocalSource != nil:
+		return s.LegacyName()
+	default:
+		return ""
+	}
+}
+
+func (s Source) LegacyName() string {
+	switch {
+	case s.GitSource != nil:
+		return s.GitSource.LegacyName()
+	case s.LocalSource != nil:
 		return filepath.Base(s.LocalSource.Directory)
 	default:
 		return ""
 	}
+}
+
+type Local struct {
+	Directory string `json:"directory"`
 }
 
 func parseLocal(dir, p string) *Dependency {

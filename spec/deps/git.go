@@ -21,8 +21,6 @@ import (
 	"strings"
 )
 
-var GO_IMPORT_STYLE = false
-
 const (
 	GitSchemeSSH   = "ssh://git@"
 	GitSchemeHTTPS = "https://"
@@ -79,9 +77,12 @@ func (gs *Git) UnmarshalJSON(data []byte) error {
 
 // Name returns the repository in a go-like format (github.com/user/repo/subdir)
 func (gs *Git) Name() string {
-	if GO_IMPORT_STYLE {
-		return fmt.Sprintf("%s/%s/%s%s", gs.Host, gs.User, gs.Repo, gs.Subdir)
-	}
+	return fmt.Sprintf("%s/%s/%s%s", gs.Host, gs.User, gs.Repo, gs.Subdir)
+}
+
+// LegacyName returns the last element of the packages path
+// example: github.com/ksonnet/ksonnet-lib/ksonnet.beta.4 becomes ksonnet.beta.4
+func (gs *Git) LegacyName() string {
 	return filepath.Base(gs.Repo + gs.Subdir)
 }
 

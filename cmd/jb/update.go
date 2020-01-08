@@ -35,8 +35,6 @@ func updateCommand(dir, jsonnetHome string, urls ...*url.URL) int {
 	jsonnetFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.File))
 	kingpin.FatalIfError(err, "failed to load jsonnetfile")
 
-	deps.GO_IMPORT_STYLE = jsonnetFile.GoImportStyle
-
 	kingpin.FatalIfError(
 		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
 		"creating vendor folder")

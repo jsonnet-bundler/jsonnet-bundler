@@ -85,7 +85,6 @@ func testData() JsonnetFile {
 
 // TestUnmarshal checks that unmarshalling works
 func TestUnmarshal(t *testing.T) {
-	deps.GO_IMPORT_STYLE = true
 	var dst JsonnetFile
 	err := json.Unmarshal([]byte(jsonJF), &dst)
 	require.NoError(t, err)
@@ -94,7 +93,6 @@ func TestUnmarshal(t *testing.T) {
 
 // TestMarshal checks that marshalling works
 func TestMarshal(t *testing.T) {
-	deps.GO_IMPORT_STYLE = true
 	data, err := json.Marshal(testData())
 	require.NoError(t, err)
 	assert.JSONEq(t, jsonJF, string(data))
@@ -103,7 +101,6 @@ func TestMarshal(t *testing.T) {
 // TestRemarshal checks that unmarshalling a previously marshalled object yields
 // the same object
 func TestRemarshal(t *testing.T) {
-	deps.GO_IMPORT_STYLE = true
 	jf := testData()
 
 	data, err := json.Marshal(jf)

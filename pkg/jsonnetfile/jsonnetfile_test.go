@@ -30,7 +30,6 @@ import (
 const notExist = "/this/does/not/exist"
 
 func TestLoad(t *testing.T) {
-	deps.GO_IMPORT_STYLE = true
 	empty := spec.New()
 
 	jsonnetfileContent := `{

@@ -28,7 +28,7 @@ import (
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
 
-const initContents = `{"goImportStyle": true, "dependencies": []}`
+const initContents = `{"dependencies": [], "legacyImports": false}`
 
 func TestInstallCommand(t *testing.T) {
 	testcases := []struct {
@@ -47,14 +47,14 @@ func TestInstallCommand(t *testing.T) {
 			Name:                    "OneURL",
 			URIs:                    []string{"github.com/jsonnet-bundler/jsonnet-bundler@v0.1.0"},
 			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"goImportStyle": true, "dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}]}`),
+			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}], "legacyImports": false}`),
 			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f", "sum": "W1uI550rQ66axRpPXA2EZDquyPg/5PHZlvUz1NEzefg="}]}`),
 		},
 		{
-			Name:                    "Relative",
+			Name:                    "Local",
 			URIs:                    []string{"jsonnet/foobar"},
 			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"goImportStyle": true, "dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}]}`),
+			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}], "legacyImports": false}`),
 			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}]}`),
 		},
 	}
@@ -75,7 +75,7 @@ func TestInstallCommand(t *testing.T) {
 			err := os.MkdirAll(localDependency, os.ModePerm)
 			assert.NoError(t, err)
 
-			// init + check it works correctly (goImportStyle true, empty dependencies)
+			// init + check it works correctly (legacyImports true, empty dependencies)
 			initCommand("")
 			jsonnetFileContent(t, jsonnetfile.File, []byte(initContents))
 

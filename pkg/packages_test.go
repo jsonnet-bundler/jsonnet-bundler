@@ -63,3 +63,33 @@ func TestKnown(t *testing.T) {
 		}
 	}
 }
+
+func TestCleanLegacyName(t *testing.T) {
+	deps := func(name string) map[string]deps.Dependency {
+		return map[string]deps.Dependency{
+			"ksonnet-lib": deps.Dependency{
+				LegacyNameCompat: name,
+				Source: deps.Source{GitSource: &deps.Git{
+					Scheme: deps.GitSchemeHTTPS,
+					Host:   "github.com",
+					User:   "ksonnet",
+					Repo:   "ksonnet-lib",
+					Subdir: "/ksonnet.beta.4",
+				}},
+			},
+		}
+
+	}
+	cases := map[string]bool{
+		"ksonnet":        false,
+		"ksonnet.beta.4": true,
+	}
+
+	for name, want := range cases {
+		list := deps(name)
+		CleanLegacyName(list)
+		if (list["ksonnet-lib"].LegacyNameCompat == "") != want {
+			t.Fatalf("expected `%s` to be removed: %v", name, want)
+		}
+	}
+}

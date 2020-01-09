@@ -71,6 +71,8 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, lockFile.Dependencies)
 	kingpin.FatalIfError(err, "failed to install packages")
 
+	pkg.CleanLegacyName(jsonnetFile.Dependencies)
+
 	kingpin.FatalIfError(
 		writeChangedJsonnetFile(jbfilebytes, &jsonnetFile, filepath.Join(dir, jsonnetfile.File)),
 		"updating jsonnetfile.json")

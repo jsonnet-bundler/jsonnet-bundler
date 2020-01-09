@@ -22,6 +22,10 @@ type Dependency struct {
 	Source  Source `json:"source"`
 	Version string `json:"version"`
 	Sum     string `json:"sum,omitempty"`
+
+	// older schema used to have `name`. We still need that data for
+	// `LegacyName`
+	LegacyNameCompat string `json:"name,omitempty"`
 }
 
 func Parse(dir, uri string) *Dependency {
@@ -41,6 +45,9 @@ func (d Dependency) Name() string {
 }
 
 func (d Dependency) LegacyName() string {
+	if d.LegacyNameCompat != "" {
+		return d.LegacyNameCompat
+	}
 	return d.Source.LegacyName()
 }
 

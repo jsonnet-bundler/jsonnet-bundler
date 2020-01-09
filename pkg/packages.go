@@ -48,14 +48,19 @@ var (
 // desired version in case by `jb install`ing it.
 //
 // Finally, all unknown files and directories are removed from vendor/
-func Ensure(direct spec.JsonnetFile, vendorDir string, locks map[string]deps.Dependency) (map[string]deps.Dependency, error) {
+// The full list of locked depedencies is returned
+func Ensure(direct spec.JsonnetFile, vendorDir string, oldLocks map[string]deps.Dependency) (map[string]deps.Dependency, error) {
 	// ensure all required files are in vendor
-	deps, err := ensure(direct.Dependencies, vendorDir, locks)
+	// This is the actual installation
+	locks, err := ensure(direct.Dependencies, vendorDir, oldLocks)
 	if err != nil {
 		return nil, err
 	}
 
-	// cleanup unknown dirs from vendor/
+	// remove unchanged legacyNames
+	CleanLegacyName(locks)
+
+	// find unknown dirs in vendor/
 	names := []string{}
 	err = filepath.Walk(vendorDir, func(path string, i os.FileInfo, err error) error {
 		if path == vendorDir {
@@ -69,9 +74,10 @@ func Ensure(direct spec.JsonnetFile, vendorDir string, locks map[string]deps.Dep
 		return nil
 	})
 
+	// remove them
 	for _, dir := range names {
 		name := strings.TrimPrefix(dir, "vendor/")
-		if !known(deps, name) {
+		if !known(locks, name) {
 			if err := os.RemoveAll(dir); err != nil {
 				return nil, err
 			}
@@ -81,18 +87,30 @@ func Ensure(direct spec.JsonnetFile, vendorDir string, locks map[string]deps.Dep
 		}
 	}
 
+	// remove all symlinks, optionally adding known ones back if wished
 	if err := cleanLegacy(vendorDir); err != nil {
 		return nil, err
 	}
 	if !direct.LegacyImports {
-		return deps, nil
+		return locks, nil
 	}
 	if err := linkLegacy(vendorDir, locks); err != nil {
 		return nil, err
 	}
 
 	// return the final lockfile contents
-	return deps, nil
+	return locks, nil
+}
+
+func CleanLegacyName(list map[string]deps.Dependency) {
+	for k, d := range list {
+		// unset if not changed by user
+		if d.LegacyNameCompat == d.Source.LegacyName() {
+			dep := list[k]
+			dep.LegacyNameCompat = ""
+			list[k] = dep
+		}
+	}
 }
 
 func cleanLegacy(vendorDir string) error {
@@ -251,11 +269,9 @@ func download(d deps.Dependency, vendorDir string) (*deps.Dependency, error) {
 		sum = hashDir(filepath.Join(vendorDir, d.Name()))
 	}
 
-	return &deps.Dependency{
-		Source:  d.Source,
-		Version: version,
-		Sum:     sum,
-	}, nil
+	d.Version = version
+	d.Sum = sum
+	return &d, nil
 }
 
 // check returns whether the files present at the vendor/ folder match the

@@ -36,6 +36,7 @@ const jsonJF = `{
       "sum": "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE="
     },
     {
+      "name": "prometheus",
       "source": {
         "git": {
           "remote": "https://github.com/prometheus/prometheus",
@@ -67,6 +68,7 @@ func testData() JsonnetFile {
 				Sum:     "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
 			},
 			"github.com/prometheus/prometheus/documentation/prometheus-mixin": {
+				LegacyNameCompat: "prometheus",
 				Source: deps.Source{
 					GitSource: &deps.Git{
 						Scheme: deps.GitSchemeHTTPS,

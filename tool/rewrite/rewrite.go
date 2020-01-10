@@ -21,10 +21,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
+
+var expr = regexp.MustCompile(`(?mU)(import ["'])(.*)(\/.*["'])`)
 
 // Rewrite changes all imports in `dir` from legacy to absolute style
 // All files in `vendorDir` are ignored
@@ -35,16 +38,7 @@ func Rewrite(dir, vendorDir string, packages map[string]deps.Dependency) error {
 			continue
 		}
 
-		legacyImport := wrap(p.LegacyName(), `"`)
-		if _, ok := imports[legacyImport]; ok {
-			continue
-		}
-
-		// double quotes
-		imports[legacyImport] = wrap(p.Name(), `"`)
-
-		// single quotes
-		imports[wrap(p.LegacyName(), "'")] = wrap(p.Name(), "'")
+		imports[p.LegacyName()] = p.Name()
 	}
 
 	vendorFi, err := os.Stat(filepath.Join(dir, vendorDir))
@@ -91,17 +85,43 @@ func replaceFile(name string, imports map[string]string) error {
 		return err
 	}
 
-	out := replace(raw, imports)
-
-	return ioutil.WriteFile(name, out, os.ModePerm)
+	out := replace(string(raw), imports)
+	return ioutil.WriteFile(name, out, 0644)
 }
 
-func replace(data []byte, imports map[string]string) []byte {
-	contents := string(data)
+func replace(data string, imports map[string]string) []byte {
+	contents := strings.Split(string(data), "\n")
 
-	for legacy, absolute := range imports {
-		contents = strings.Replace(contents, legacy, absolute, -1)
+	// try to fix imports line by line
+	buf := make([]string, 0, len(contents))
+	for _, line := range contents {
+		match := expr.FindStringSubmatch(line)
+		// no import in this line: push unmodified
+		if len(match) == 0 {
+			buf = append(buf, line)
+			continue
+		}
+
+		// the legacyName
+		matchedName := match[2]
+
+		replaced := false
+		for legacy, absolute := range imports {
+			// not this import
+			if matchedName != legacy {
+				continue
+			}
+
+			// fix the import
+			replaced = true
+			buf = append(buf, expr.ReplaceAllString(line, "${1}"+absolute+"${3}"))
+		}
+
+		// no matching known import found? push unmodified
+		if !replaced {
+			buf = append(buf, line)
+		}
 	}
 
-	return []byte(contents)
+	return []byte(strings.Join(buf, "\n"))
 }

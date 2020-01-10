@@ -26,6 +26,7 @@ const (
 	installActionName = "install"
 	updateActionName  = "update"
 	initActionName    = "init"
+	rewriteActionName = "rewrite"
 )
 
 func main() {
@@ -52,6 +53,8 @@ func Main() int {
 
 	updateCmd := a.Command(updateActionName, "Update all dependencies.")
 
+	rewriteCmd := a.Command(rewriteActionName, "Automatically rewrite legacy imports to absolute ones")
+
 	command, err := a.Parse(os.Args[1:])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, errors.Wrapf(err, "Error parsing commandline arguments"))
@@ -71,6 +74,8 @@ func Main() int {
 		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs)
 	case updateCmd.FullCommand():
 		return updateCommand(workdir, cfg.JsonnetHome)
+	case rewriteCmd.FullCommand():
+		return rewriteCommand(workdir, cfg.JsonnetHome)
 	default:
 		installCommand(workdir, cfg.JsonnetHome, []string{})
 	}

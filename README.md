@@ -106,6 +106,9 @@ Commands:
   update
     Update all dependencies.
 
+  rewrite
+    Automatically rewrite legacy imports to absolute ones
+
 
 ```
 

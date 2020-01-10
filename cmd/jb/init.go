@@ -36,7 +36,8 @@ func initCommand(dir string) int {
 
 	// default to go-style only for new setups
 	s := spec.New()
-	s.LegacyImports = false
+	// TODO: disable them by default eventually
+	// s.LegacyImports = false
 
 	contents, err := json.MarshalIndent(s, "", "  ")
 	kingpin.FatalIfError(err, "formatting jsonnetfile contents as json")

@@ -34,7 +34,6 @@ func initCommand(dir string) int {
 		return 1
 	}
 
-	// default to go-style only for new setups
 	s := spec.New()
 	// TODO: disable them by default eventually
 	// s.LegacyImports = false

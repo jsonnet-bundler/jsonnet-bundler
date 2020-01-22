@@ -87,8 +87,8 @@ func Ensure(direct spec.JsonnetFile, vendorDir string, oldLocks map[string]deps.
 		}
 	}
 
-	// remove all symlinks, optionally adding known ones back if wished
-	if err := cleanLegacy(vendorDir); err != nil {
+	// remove all symlinks, optionally adding known ones back later if wished
+	if err := cleanLegacySymlinks(vendorDir, locks); err != nil {
 		return nil, err
 	}
 	if !direct.LegacyImports {
@@ -113,9 +113,23 @@ func CleanLegacyName(list map[string]deps.Dependency) {
 	}
 }
 
-func cleanLegacy(vendorDir string) error {
+func cleanLegacySymlinks(vendorDir string, locks map[string]deps.Dependency) error {
+	// local packages need to be ignored
+	locals := map[string]bool{}
+	for _, d := range locks {
+		if d.Source.LocalSource == nil {
+			continue
+		}
+
+		locals[filepath.Join(vendorDir, d.Name())] = true
+	}
+
 	// remove all symlinks first
 	return filepath.Walk(vendorDir, func(path string, i os.FileInfo, err error) error {
+		if locals[path] {
+			return nil
+		}
+
 		if i.Mode()&os.ModeSymlink != 0 {
 			if err := os.Remove(path); err != nil {
 				return err
@@ -128,6 +142,11 @@ func cleanLegacy(vendorDir string) error {
 func linkLegacy(vendorDir string, locks map[string]deps.Dependency) error {
 	// create only the ones we want
 	for _, d := range locks {
+		// localSource still uses the relative style
+		if d.Source.LocalSource != nil {
+			continue
+		}
+
 		legacyName := filepath.Join("vendor", d.LegacyName())
 		pkgName := d.Name()
 

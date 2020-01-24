@@ -87,7 +87,7 @@ func (gs *Git) LegacyName() string {
 }
 
 var gitProtoFmts = map[string]string{
-	GitSchemeSSH:   GitSchemeSSH + "%s:%s/%s.git",
+	GitSchemeSSH:   GitSchemeSSH + "%s/%s/%s.git",
 	GitSchemeHTTPS: GitSchemeHTTPS + "%s/%s/%s",
 }
 

@@ -54,7 +54,7 @@ func TestParseGit(t *testing.T) {
 					Subdir: "/foobar",
 				}},
 			},
-			wantRemote: "ssh://git@my.host:user/repo.git",
+			wantRemote: "ssh://git@my.host/user/repo.git",
 		},
 	}
 

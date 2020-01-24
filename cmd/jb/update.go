@@ -24,6 +24,7 @@ import (
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
 
 func updateCommand(dir, jsonnetHome string, urls ...*url.URL) int {
@@ -39,7 +40,7 @@ func updateCommand(dir, jsonnetHome string, urls ...*url.URL) int {
 		"creating vendor folder")
 
 	// When updating, locks are ignored.
-	locks := map[string]spec.Dependency{}
+	locks := map[string]deps.Dependency{}
 	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, locks)
 	kingpin.FatalIfError(err, "failed to install packages")
 

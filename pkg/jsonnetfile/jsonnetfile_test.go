@@ -24,17 +24,17 @@ import (
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
 
 const notExist = "/this/does/not/exist"
 
 func TestLoad(t *testing.T) {
-	empty := spec.New()
-
-	jsonnetfileContent := `{
+	jsonnetfileContent := `
+{
+    "legacyImports": false,
     "dependencies": [
         {
-            "name": "foobar",
             "source": {
                 "git": {
                     "remote": "https://github.com/foobar/foobar",
@@ -46,62 +46,61 @@ func TestLoad(t *testing.T) {
     ]
 }
 `
+
 	jsonnetFileExpected := spec.JsonnetFile{
-		Dependencies: map[string]spec.Dependency{
-			"foobar": {
-				Name: "foobar",
-				Source: spec.Source{
-					GitSource: &spec.GitSource{
-						Remote: "https://github.com/foobar/foobar",
+		LegacyImports: false,
+		Dependencies: map[string]deps.Dependency{
+			"github.com/foobar/foobar": {
+				Source: deps.Source{
+					GitSource: &deps.Git{
+						Scheme: deps.GitSchemeHTTPS,
+						Host:   "github.com",
+						User:   "foobar",
+						Repo:   "foobar",
 						Subdir: "",
 					},
 				},
-				Version:   "master",
-				DepSource: "",
+				Version: "master",
 			}},
 	}
 
-	{
-		jf, err := jsonnetfile.Load(notExist)
-		assert.Equal(t, empty, jf)
-		assert.Error(t, err)
+	tempDir, err := ioutil.TempDir("", "jb-load-jsonnetfile")
+	if err != nil {
+		t.Fatal(err)
 	}
-	{
-		tempDir, err := ioutil.TempDir("", "jb-load-jsonnetfile")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer func() {
-			err := os.RemoveAll(tempDir)
-			assert.Nil(t, err)
-		}()
+	defer os.RemoveAll(tempDir)
 
-		tempFile := filepath.Join(tempDir, jsonnetfile.File)
-		err = ioutil.WriteFile(tempFile, []byte(`{}`), os.ModePerm)
-		assert.Nil(t, err)
+	tempFile := filepath.Join(tempDir, jsonnetfile.File)
+	err = ioutil.WriteFile(tempFile, []byte(jsonnetfileContent), os.ModePerm)
+	assert.Nil(t, err)
 
-		jf, err := jsonnetfile.Load(tempFile)
-		assert.Nil(t, err)
-		assert.Equal(t, empty, jf)
+	jf, err := jsonnetfile.Load(tempFile)
+	assert.Nil(t, err)
+	assert.Equal(t, jsonnetFileExpected, jf)
+}
+
+func TestLoadEmpty(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "jb-load-empty")
+	if err != nil {
+		t.Fatal(err)
 	}
-	{
-		tempDir, err := ioutil.TempDir("", "jb-load-jsonnetfile")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer func() {
-			err := os.RemoveAll(tempDir)
-			assert.Nil(t, err)
-		}()
+	defer os.RemoveAll(tempDir)
 
-		tempFile := filepath.Join(tempDir, jsonnetfile.File)
-		err = ioutil.WriteFile(tempFile, []byte(jsonnetfileContent), os.ModePerm)
-		assert.Nil(t, err)
+	// write empty json file
+	tempFile := filepath.Join(tempDir, jsonnetfile.File)
+	err = ioutil.WriteFile(tempFile, []byte(`{}`), os.ModePerm)
+	assert.Nil(t, err)
 
-		jf, err := jsonnetfile.Load(tempFile)
-		assert.Nil(t, err)
-		assert.Equal(t, jsonnetFileExpected, jf)
-	}
+	// expect it to be loaded properly
+	got, err := jsonnetfile.Load(tempFile)
+	assert.Nil(t, err)
+	assert.Equal(t, spec.New(), got)
+}
+
+func TestLoadNotExist(t *testing.T) {
+	jf, err := jsonnetfile.Load(notExist)
+	assert.Equal(t, spec.New(), jf)
+	assert.Error(t, err)
 }
 
 func TestFileExists(t *testing.T) {

@@ -27,6 +27,7 @@ import (
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
 
 func installCommand(dir, jsonnetHome string, uris []string) int {
@@ -53,22 +54,24 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 		"creating vendor folder")
 
 	for _, u := range uris {
-		d := parseDependency(dir, u)
+		d := deps.Parse(dir, u)
 		if d == nil {
 			kingpin.Fatalf("Unable to parse package URI `%s`", u)
 		}
 
-		if !depEqual(jsonnetFile.Dependencies[d.Name], *d) {
+		if !depEqual(jsonnetFile.Dependencies[d.Name()], *d) {
 			// the dep passed on the cli is different from the jsonnetFile
-			jsonnetFile.Dependencies[d.Name] = *d
+			jsonnetFile.Dependencies[d.Name()] = *d
 
 			// we want to install the passed version (ignore the lock)
-			delete(lockFile.Dependencies, d.Name)
+			delete(lockFile.Dependencies, d.Name())
 		}
 	}
 
 	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, lockFile.Dependencies)
 	kingpin.FatalIfError(err, "failed to install packages")
+
+	pkg.CleanLegacyName(jsonnetFile.Dependencies)
 
 	kingpin.FatalIfError(
 		writeChangedJsonnetFile(jbfilebytes, &jsonnetFile, filepath.Join(dir, jsonnetfile.File)),
@@ -81,8 +84,8 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 	return 0
 }
 
-func depEqual(d1, d2 spec.Dependency) bool {
-	name := d1.Name == d2.Name
+func depEqual(d1, d2 deps.Dependency) bool {
+	name := d1.Name() == d2.Name()
 	version := d1.Version == d2.Version
 	source := reflect.DeepEqual(d1.Source, d2.Source)
 

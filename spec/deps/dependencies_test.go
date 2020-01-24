@@ -11,16 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-package main
+package deps
 
 import (
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
 
 func TestParseDependency(t *testing.T) {
@@ -34,7 +31,7 @@ func TestParseDependency(t *testing.T) {
 	tests := []struct {
 		name string
 		path string
-		want *deps.Dependency
+		want *Dependency
 	}{
 		{
 			name: "Empty",
@@ -47,43 +44,11 @@ func TestParseDependency(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "GitHub",
-			path: "github.com/jsonnet-bundler/jsonnet-bundler",
-			want: &deps.Dependency{
-				Source: deps.Source{
-					GitSource: &deps.Git{
-						Scheme: deps.GitSchemeHTTPS,
-						Host:   "github.com",
-						User:   "jsonnet-bundler",
-						Repo:   "jsonnet-bundler",
-						Subdir: "",
-					},
-				},
-				Version: "master",
-			},
-		},
-		{
-			name: "SSH",
-			path: "git+ssh://git@github.com:jsonnet-bundler/jsonnet-bundler.git",
-			want: &deps.Dependency{
-				Source: deps.Source{
-					GitSource: &deps.Git{
-						Scheme: deps.GitSchemeSSH,
-						Host:   "github.com",
-						User:   "jsonnet-bundler",
-						Repo:   "jsonnet-bundler",
-						Subdir: "",
-					},
-				},
-				Version: "master",
-			},
-		},
-		{
 			name: "local",
 			path: testFolder,
-			want: &deps.Dependency{
-				Source: deps.Source{
-					LocalSource: &deps.Local{
+			want: &Dependency{
+				Source: Source{
+					LocalSource: &Local{
 						Directory: "test/jsonnet/foobar",
 					},
 				},
@@ -93,7 +58,7 @@ func TestParseDependency(t *testing.T) {
 	}
 	for _, tt := range tests {
 		_ = t.Run(tt.name, func(t *testing.T) {
-			dependency := deps.Parse("", tt.path)
+			dependency := Parse("", tt.path)
 
 			if tt.path == "" {
 				assert.Nil(t, dependency)

@@ -87,7 +87,7 @@ func (gs *Git) LegacyName() string {
 }
 
 var gitProtoFmts = map[string]string{
-	GitSchemeSSH:   GitSchemeSSH + "%s:%s/%s.git",
+	GitSchemeSSH:   GitSchemeSSH + "%s/%s/%s.git",
 	GitSchemeHTTPS: GitSchemeHTTPS + "%s/%s/%s",
 }
 
@@ -100,7 +100,7 @@ func (gs *Git) Remote() string {
 
 // regular expressions for matching package uris
 const (
-	gitSSHExp     = `git\+ssh://git@(?P<host>[^:]+):(?P<user>[^/]+)/(?P<repo>[^/]+).git`
+	gitSSHExp     = `ssh://git@(?P<host>.+)/(?P<user>.+)/(?P<repo>.+).git`
 	githubSlugExp = `github.com/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
 )
 

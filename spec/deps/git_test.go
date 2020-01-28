@@ -17,9 +17,21 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseGit(t *testing.T) {
+	sshWant := &Dependency{
+		Version: "v1",
+		Source: Source{GitSource: &Git{
+			Scheme: GitSchemeSSH,
+			Host:   "my.host",
+			User:   "user",
+			Repo:   "repo",
+			Subdir: "/foobar",
+		}},
+	}
+
 	tests := []struct {
 		name       string
 		uri        string
@@ -27,7 +39,7 @@ func TestParseGit(t *testing.T) {
 		wantRemote string
 	}{
 		{
-			name: "GitHub",
+			name: "github-slug",
 			uri:  "github.com/ksonnet/ksonnet-lib/ksonnet.beta.3",
 			want: &Dependency{
 				Version: "master",
@@ -42,26 +54,28 @@ func TestParseGit(t *testing.T) {
 			wantRemote: "https://github.com/ksonnet/ksonnet-lib",
 		},
 		{
-			name: "SSH",
-			uri:  "git+ssh://git@my.host:user/repo.git/foobar@v1",
-			want: &Dependency{
-				Version: "v1",
-				Source: Source{GitSource: &Git{
-					Scheme: GitSchemeSSH,
-					Host:   "my.host",
-					User:   "user",
-					Repo:   "repo",
-					Subdir: "/foobar",
-				}},
-			},
-			wantRemote: "ssh://git@my.host:user/repo.git",
+			name:       "ssh.ssh",
+			uri:        "ssh://git@my.host/user/repo.git/foobar@v1",
+			want:       sshWant,
+			wantRemote: "ssh://git@my.host/user/repo.git",
+		},
+		{
+			name:       "ssh.scp",
+			uri:        "git@my.host:user/repo.git/foobar@v1",
+			want:       sshWant,
+			wantRemote: "ssh://git@my.host/user/repo.git", // want ssh format here
 		},
 	}
 
 	for _, c := range tests {
 		t.Run(c.name, func(t *testing.T) {
 			got := Parse("", c.uri)
+			require.NotNilf(t, got, "parsed dependency is nil. Most likely, no regex matched the format.")
+
 			assert.Equal(t, c.want, got)
+
+			require.NotNil(t, got.Source)
+			require.NotNil(t, got.Source.GitSource)
 			assert.Equal(t, c.wantRemote, got.Source.GitSource.Remote())
 		})
 	}

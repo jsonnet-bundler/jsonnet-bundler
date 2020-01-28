@@ -56,6 +56,108 @@ func TestParseGit(t *testing.T) {
 			},
 			wantRemote: "ssh://git@my.host:user/repo.git",
 		},
+		{
+			name: "ValidGitHTTPS",
+			uri:  "https://example.com/foo/bar",
+			want: &Dependency{
+				Version: "master",
+				Source: Source{
+					GitSource: &Git{
+						Scheme: GitSchemeHTTPS,
+						Host:   "example.com",
+						User:   "foo",
+						Repo:   "bar",
+						Subdir: "",
+					},
+				},
+			},
+			wantRemote: "https://example.com/foo/bar",
+		},
+		{
+			name: "ValidGitNoScheme",
+			uri:  "example.com/foo/bar",
+			want: &Dependency{
+				Version: "master",
+				Source: Source{
+					GitSource: &Git{
+						Scheme: GitSchemeHTTPS,
+						Host:   "example.com",
+						User:   "foo",
+						Repo:   "bar",
+						Subdir: "",
+					},
+				},
+			},
+			wantRemote: "https://example.com/foo/bar",
+		},
+		{
+			name: "ValidGitPath",
+			uri:  "example.com/foo/bar/baz/bat",
+			want: &Dependency{
+				Version: "master",
+				Source: Source{
+					GitSource: &Git{
+						Scheme: GitSchemeHTTPS,
+						Host:   "example.com",
+						User:   "foo",
+						Repo:   "bar",
+						Subdir: "/baz/bat",
+					},
+				},
+			},
+			wantRemote: "https://example.com/foo/bar",
+		},
+		{
+			name: "ValidGitVersion",
+			uri:  "example.com/foo/bar@baz",
+			want: &Dependency{
+				Version: "baz",
+				Source: Source{
+					GitSource: &Git{
+						Scheme: GitSchemeHTTPS,
+						Host:   "example.com",
+						User:   "foo",
+						Repo:   "bar",
+						Subdir: "",
+					},
+				},
+			},
+			wantRemote: "https://example.com/foo/bar",
+		},
+		{
+			name: "ValidGitPathVersion",
+			uri:  "example.com/foo/bar/baz@bat",
+			want: &Dependency{
+				Version: "bat",
+				Source: Source{
+					GitSource: &Git{
+						Scheme: GitSchemeHTTPS,
+						Host:   "example.com",
+						User:   "foo",
+						Repo:   "bar",
+						Subdir: "/baz",
+					},
+				},
+			},
+			wantRemote: "https://example.com/foo/bar",
+		},
+		{
+			name: "ValidGitSubdomain",
+			uri:  "git.example.com/foo/bar",
+			want: &Dependency{
+				Version: "master",
+				Source: Source{
+					GitSource: &Git{
+						Scheme: GitSchemeHTTPS,
+						Host:   "git.example.com",
+						User:   "foo",
+						Repo:   "bar",
+						Subdir: "",
+					},
+				},
+			},
+			wantRemote: "https://git.example.com/foo/bar",
+		},
 	}
 
 	for _, c := range tests {

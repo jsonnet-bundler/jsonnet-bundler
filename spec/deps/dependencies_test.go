@@ -40,7 +40,17 @@ func TestParseDependency(t *testing.T) {
 		},
 		{
 			name: "Invalid",
-			path: "github.com/foo",
+			path: "example.com/foo",
+			want: nil,
+		},
+		{
+			name: "InvalidDomain",
+			path: "example.c/foo/bar",
+			want: nil,
+		},
+		{
+			name: "InvalidDomain2",
+			path: "examplec/foo/bar",
 			want: nil,
 		},
 		{

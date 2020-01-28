@@ -33,11 +33,11 @@ type Git struct {
 
 	// Hostname the repo is located at
 	Host string
-	// User (github.com/<user>)
+	// User (example.com/<user>)
 	User string
-	// Repo (github.com/<user>/<repo>)
+	// Repo (example.com/<user>/<repo>)
 	Repo string
-	// Subdir (github.com/<user>/<repo>/<subdir>)
+	// Subdir (example.com/<user>/<repo>/<subdir>)
 	Subdir string
 }
 
@@ -75,13 +75,13 @@ func (gs *Git) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Name returns the repository in a go-like format (github.com/user/repo/subdir)
+// Name returns the repository in a go-like format (example.com/user/repo/subdir)
 func (gs *Git) Name() string {
 	return fmt.Sprintf("%s/%s/%s%s", gs.Host, gs.User, gs.Repo, gs.Subdir)
 }
 
 // LegacyName returns the last element of the packages path
-// example: github.com/ksonnet/ksonnet-lib/ksonnet.beta.4 becomes ksonnet.beta.4
+// example: example.com/ksonnet/ksonnet-lib/ksonnet.beta.4 becomes ksonnet.beta.4
 func (gs *Git) LegacyName() string {
 	return filepath.Base(gs.Repo + gs.Subdir)
 }
@@ -100,8 +100,8 @@ func (gs *Git) Remote() string {
 
 // regular expressions for matching package uris
 const (
-	gitSSHExp     = `git\+ssh://git@(?P<host>[^:]+):(?P<user>[^/]+)/(?P<repo>[^/]+).git`
-	githubSlugExp = `github.com/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
+	gitSSHExp  = `git\+ssh://git@(?P<host>[^:]+):(?P<user>[^/]+)/(?P<repo>[^/]+).git`
+	gitSlugExp = `(?P<scheme>https://)?(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
 )
 
 var (
@@ -110,10 +110,10 @@ var (
 	gitSSHWithPathRegex           = regexp.MustCompile(gitSSHExp + `/(?P<subdir>.*)`)
 	gitSSHWithPathAndVersionRegex = regexp.MustCompile(gitSSHExp + `/(?P<subdir>.*)@(?P<version>.*)`)
 
-	githubSlugRegex                   = regexp.MustCompile(githubSlugExp)
-	githubSlugWithVersionRegex        = regexp.MustCompile(githubSlugExp + `@(?P<version>.*)`)
-	githubSlugWithPathRegex           = regexp.MustCompile(githubSlugExp + `/(?P<subdir>.*)`)
-	githubSlugWithPathAndVersionRegex = regexp.MustCompile(githubSlugExp + `/(?P<subdir>.*)@(?P<version>.*)`)
+	gitSlugRegex                   = regexp.MustCompile(gitSlugExp)
+	gitSlugWithVersionRegex        = regexp.MustCompile(gitSlugExp + `@(?P<version>.*)`)
+	gitSlugWithPathRegex           = regexp.MustCompile(gitSlugExp + `/(?P<subdir>.*)`)
+	gitSlugWithPathAndVersionRegex = regexp.MustCompile(gitSlugExp + `/(?P<subdir>.*)@(?P<version>.*)`)
 )
 
 func parseGit(uri string) *Dependency {
@@ -125,8 +125,8 @@ func parseGit(uri string) *Dependency {
 	var version string
 
 	switch {
-	case githubSlugRegex.MatchString(uri):
-		gs, version = parseGitHub(uri)
+	case gitSlugRegex.MatchString(uri):
+		gs, version = parseGenericGit(uri)
 	case gitSSHRegex.MatchString(uri):
 		gs, version = parseGitSSH(uri)
 	default:
@@ -156,16 +156,17 @@ func parseGitSSH(p string) (gs *Git, version string) {
 	return gs, version
 }
 
-func parseGitHub(p string) (gs *Git, version string) {
+func parseGenericGit(p string) (gs *Git, version string) {
 	gs, version = match(p, []*regexp.Regexp{
-		githubSlugWithPathAndVersionRegex,
-		githubSlugWithPathRegex,
-		githubSlugWithVersionRegex,
-		githubSlugRegex,
+		gitSlugWithPathAndVersionRegex,
+		gitSlugWithPathRegex,
+		gitSlugWithVersionRegex,
+		gitSlugRegex,
 	})
 
-	gs.Scheme = GitSchemeHTTPS
-	gs.Host = "github.com"
+	if gs.Scheme == "" {
+		gs.Scheme = GitSchemeHTTPS
+	}
 	return gs, version
 }
 
@@ -180,6 +181,7 @@ func match(p string, exps []*regexp.Regexp) (gs *Git, version string) {
 		gs.Host = matches["host"]
 		gs.User = matches["user"]
 		gs.Repo = matches["repo"]
+		gs.Scheme = matches["scheme"]
 
 		if sd, ok := matches["subdir"]; ok {
 			gs.Subdir = sd

@@ -25,7 +25,7 @@ func TestParseGit(t *testing.T) {
 		Version: "v1",
 		Source: Source{GitSource: &Git{
 			Scheme: GitSchemeSSH,
-			Host:   "my.host",
+			Host:   "github.com",
 			User:   "user",
 			Repo:   "repo",
 			Subdir: "/foobar",
@@ -55,15 +55,15 @@ func TestParseGit(t *testing.T) {
 		},
 		{
 			name:       "ssh.ssh",
-			uri:        "ssh://git@my.host/user/repo.git/foobar@v1",
+			uri:        "ssh://git@github.com/user/repo.git/foobar@v1",
 			want:       sshWant,
-			wantRemote: "ssh://git@my.host/user/repo.git",
+			wantRemote: "ssh://git@github.com/user/repo.git",
 		},
 		{
 			name:       "ssh.scp",
-			uri:        "git@my.host:user/repo.git/foobar@v1",
+			uri:        "git@github.com:user/repo.git/foobar@v1",
 			want:       sshWant,
-			wantRemote: "ssh://git@my.host/user/repo.git", // want ssh format here
+			wantRemote: "ssh://git@github.com/user/repo.git", // want ssh format here
 		},
 	}
 

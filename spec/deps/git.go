@@ -123,16 +123,16 @@ func parseGit(uri string) *Dependency {
 	var version string
 
 	switch {
-	case reMatch(githubSlugExp, uri):
-		gs, version = match(uri, githubSlugExp)
-		gs.Scheme = GitSchemeHTTPS
-		gs.Host = "github.com"
 	case reMatch(gitSSHExp, uri):
 		gs, version = match(uri, gitSSHExp)
 		gs.Scheme = GitSchemeSSH
 	case reMatch(gitSCPExp, uri):
 		gs, version = match(uri, gitSCPExp)
 		gs.Scheme = GitSchemeSSH
+	case reMatch(githubSlugExp, uri):
+		gs, version = match(uri, githubSlugExp)
+		gs.Scheme = GitSchemeHTTPS
+		gs.Host = "github.com"
 	default:
 		return nil
 	}

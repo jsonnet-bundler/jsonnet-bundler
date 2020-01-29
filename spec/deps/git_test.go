@@ -21,15 +21,17 @@ import (
 )
 
 func TestParseGit(t *testing.T) {
-	sshWant := &Dependency{
-		Version: "v1",
-		Source: Source{GitSource: &Git{
-			Scheme: GitSchemeSSH,
-			Host:   "github.com",
-			User:   "user",
-			Repo:   "repo",
-			Subdir: "/foobar",
-		}},
+	sshWant := func(host string) *Dependency {
+		return &Dependency{
+			Version: "v1",
+			Source: Source{GitSource: &Git{
+				Scheme: GitSchemeSSH,
+				Host:   host,
+				User:   "user",
+				Repo:   "repo",
+				Subdir: "/foobar",
+			}},
+		}
 	}
 
 	tests := []struct {
@@ -55,15 +57,15 @@ func TestParseGit(t *testing.T) {
 		},
 		{
 			name:       "ssh.ssh",
-			uri:        "ssh://git@github.com/user/repo.git/foobar@v1",
-			want:       sshWant,
-			wantRemote: "ssh://git@github.com/user/repo.git",
+			uri:        "ssh://git@example.com/user/repo.git/foobar@v1",
+			want:       sshWant("example.com"),
+			wantRemote: "ssh://git@example.com/user/repo.git",
 		},
 		{
 			name:       "ssh.scp",
-			uri:        "git@github.com:user/repo.git/foobar@v1",
-			want:       sshWant,
-			wantRemote: "ssh://git@github.com/user/repo.git", // want ssh format here
+			uri:        "git@my.host:user/repo.git/foobar@v1",
+			want:       sshWant("my.host"),
+			wantRemote: "ssh://git@my.host/user/repo.git", // want ssh format here
 		},
 	}
 

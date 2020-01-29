@@ -100,8 +100,9 @@ func (gs *Git) Remote() string {
 
 // regular expressions for matching package uris
 const (
-	gitSSHExp  = `ssh://git@(?P<host>.+)/(?P<user>.+)/(?P<repo>.+).git`
-	gitSCPExp  = `^git@(?P<host>.+):(?P<user>.+)/(?P<repo>.+).git`
+	gitSSHExp = `ssh://git@(?P<host>.+)/(?P<user>.+)/(?P<repo>.+).git`
+	gitSCPExp = `^git@(?P<host>.+):(?P<user>.+)/(?P<repo>.+).git`
+	// The long ugly pattern for ${host} here is a generic pattern for "valid URL with zero or more subdomains and a valid TLD"
 	gitSlugExp = `(?P<scheme>https://)?(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
 )
 

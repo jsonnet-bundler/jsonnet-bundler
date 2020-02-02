@@ -81,7 +81,7 @@ func (gs *Git) Name() string {
 }
 
 // LegacyName returns the last element of the packages path
-// example: example.com/ksonnet/ksonnet-lib/ksonnet.beta.4 becomes ksonnet.beta.4
+// example: github.com/ksonnet/ksonnet-lib/ksonnet.beta.4 becomes ksonnet.beta.4
 func (gs *Git) LegacyName() string {
 	return filepath.Base(gs.Repo + gs.Subdir)
 }
@@ -103,13 +103,10 @@ const (
 	gitSSHExp = `ssh://git@(?P<host>.+)/(?P<user>.+)/(?P<repo>.+).git`
 	gitSCPExp = `^git@(?P<host>.+):(?P<user>.+)/(?P<repo>.+).git`
 	// The long ugly pattern for ${host} here is a generic pattern for "valid URL with zero or more subdomains and a valid TLD"
-	gitSlugExp = `(?P<scheme>https://)?(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
+	gitHTTPSExp = `(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
 )
 
 var (
-	gitSSHRegex  = regexp.MustCompile(gitSSHExp)
-	gitSlugRegex = regexp.MustCompile(gitSlugExp)
-
 	VersionRegex        = `@(?P<version>.*)`
 	PathRegex           = `/(?P<subdir>.*)`
 	PathAndVersionRegex = `/(?P<subdir>.*)@(?P<version>.*)`
@@ -130,8 +127,8 @@ func parseGit(uri string) *Dependency {
 	case reMatch(gitSCPExp, uri):
 		gs, version = match(uri, gitSCPExp)
 		gs.Scheme = GitSchemeSSH
-	case reMatch(gitSlugExp, uri):
-		gs, version = match(uri, gitSlugExp)
+	case reMatch(gitHTTPSExp, uri):
+		gs, version = match(uri, gitHTTPSExp)
 		gs.Scheme = GitSchemeHTTPS
 	default:
 		return nil
@@ -166,7 +163,6 @@ func match(p string, exp string) (gs *Git, version string) {
 		gs.Host = matches["host"]
 		gs.User = matches["user"]
 		gs.Repo = matches["repo"]
-		gs.Scheme = matches["scheme"]
 
 		if sd, ok := matches["subdir"]; ok {
 			gs.Subdir = sd

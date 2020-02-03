@@ -64,12 +64,12 @@ func TestParseDependency(t *testing.T) {
 		},
 		{
 			name: "SSH",
-			path: "git+ssh://git@example.com/jsonnet-bundler/jsonnet-bundler.git",
+			path: "git+ssh://git@github.com/jsonnet-bundler/jsonnet-bundler.git",
 			want: &deps.Dependency{
 				Source: deps.Source{
 					GitSource: &deps.Git{
 						Scheme: deps.GitSchemeSSH,
-						Host:   "example.com",
+						Host:   "github.com",
 						User:   "jsonnet-bundler",
 						Repo:   "jsonnet-bundler",
 						Subdir: "",

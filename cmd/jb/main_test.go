@@ -43,17 +43,17 @@ func TestParseDependency(t *testing.T) {
 		},
 		{
 			name: "Invalid",
-			path: "github.com/foo",
+			path: "example.com/foo",
 			want: nil,
 		},
 		{
-			name: "GitHub",
-			path: "github.com/jsonnet-bundler/jsonnet-bundler",
+			name: "GitHTTPS",
+			path: "example.com/jsonnet-bundler/jsonnet-bundler",
 			want: &deps.Dependency{
 				Source: deps.Source{
 					GitSource: &deps.Git{
 						Scheme: deps.GitSchemeHTTPS,
-						Host:   "github.com",
+						Host:   "example.com",
 						User:   "jsonnet-bundler",
 						Repo:   "jsonnet-bundler",
 						Subdir: "",

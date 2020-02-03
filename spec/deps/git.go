@@ -33,11 +33,11 @@ type Git struct {
 
 	// Hostname the repo is located at
 	Host string
-	// User (github.com/<user>)
+	// User (example.com/<user>)
 	User string
-	// Repo (github.com/<user>/<repo>)
+	// Repo (example.com/<user>/<repo>)
 	Repo string
-	// Subdir (github.com/<user>/<repo>/<subdir>)
+	// Subdir (example.com/<user>/<repo>/<subdir>)
 	Subdir string
 }
 
@@ -75,7 +75,7 @@ func (gs *Git) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Name returns the repository in a go-like format (github.com/user/repo/subdir)
+// Name returns the repository in a go-like format (example.com/user/repo/subdir)
 func (gs *Git) Name() string {
 	return fmt.Sprintf("%s/%s/%s%s", gs.Host, gs.User, gs.Repo, gs.Subdir)
 }
@@ -100,15 +100,13 @@ func (gs *Git) Remote() string {
 
 // regular expressions for matching package uris
 const (
-	gitSSHExp     = `ssh://git@(?P<host>.+)/(?P<user>.+)/(?P<repo>.+).git`
-	gitSCPExp     = `^git@(?P<host>.+):(?P<user>.+)/(?P<repo>.+).git`
-	githubSlugExp = `github.com/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
+	gitSSHExp = `ssh://git@(?P<host>.+)/(?P<user>.+)/(?P<repo>.+).git`
+	gitSCPExp = `^git@(?P<host>.+):(?P<user>.+)/(?P<repo>.+).git`
+	// The long ugly pattern for ${host} here is a generic pattern for "valid URL with zero or more subdomains and a valid TLD"
+	gitHTTPSExp = `(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
 )
 
 var (
-	gitSSHRegex     = regexp.MustCompile(gitSSHExp)
-	githubSlugRegex = regexp.MustCompile(githubSlugExp)
-
 	VersionRegex        = `@(?P<version>.*)`
 	PathRegex           = `/(?P<subdir>.*)`
 	PathAndVersionRegex = `/(?P<subdir>.*)@(?P<version>.*)`
@@ -129,10 +127,9 @@ func parseGit(uri string) *Dependency {
 	case reMatch(gitSCPExp, uri):
 		gs, version = match(uri, gitSCPExp)
 		gs.Scheme = GitSchemeSSH
-	case reMatch(githubSlugExp, uri):
-		gs, version = match(uri, githubSlugExp)
+	case reMatch(gitHTTPSExp, uri):
+		gs, version = match(uri, gitHTTPSExp)
 		gs.Scheme = GitSchemeHTTPS
-		gs.Host = "github.com"
 	default:
 		return nil
 	}
@@ -150,7 +147,6 @@ func parseGit(uri string) *Dependency {
 
 func match(p string, exp string) (gs *Git, version string) {
 	gs = &Git{}
-
 	exps := []*regexp.Regexp{
 		regexp.MustCompile(exp + PathAndVersionRegex),
 		regexp.MustCompile(exp + PathRegex),

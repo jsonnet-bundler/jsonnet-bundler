@@ -76,7 +76,10 @@ func Ensure(direct spec.JsonnetFile, vendorDir string, oldLocks map[string]deps.
 
 	// remove them
 	for _, dir := range names {
-		name := strings.TrimPrefix(dir, "vendor/")
+		name, err := filepath.Rel(vendorDir, dir)
+		if err != nil {
+			return nil, err
+		}
 		if !known(locks, name) {
 			if err := os.RemoveAll(dir); err != nil {
 				return nil, err
@@ -147,7 +150,7 @@ func linkLegacy(vendorDir string, locks map[string]deps.Dependency) error {
 			continue
 		}
 
-		legacyName := filepath.Join("vendor", d.LegacyName())
+		legacyName := filepath.Join(vendorDir, d.LegacyName())
 		pkgName := d.Name()
 
 		taken, err := checkLegacyNameTaken(legacyName, pkgName)

@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -66,6 +67,8 @@ func Main() int {
 	if err != nil {
 		return 1
 	}
+
+	cfg.JsonnetHome = filepath.Clean(cfg.JsonnetHome)
 
 	switch command {
 	case initCmd.FullCommand():

@@ -32,6 +32,18 @@ import (
 const initContents = `{"dependencies": [], "legacyImports": true}`
 
 func TestInstallCommand(t *testing.T) {
+	testInstallCommandWithJsonnetHome(t, "vendor")
+}
+
+func TestInstallCommandCustomJsonnetHome(t *testing.T) {
+	testInstallCommandWithJsonnetHome(t, "custom-vendor-dir")
+}
+
+func TestInstallCommandDeepCustomJsonnetHome(t *testing.T) {
+	testInstallCommandWithJsonnetHome(t, "custom/vendor/dir")
+}
+
+func testInstallCommandWithJsonnetHome(t *testing.T, jsonnetHome string) {
 	testcases := []struct {
 		Name                    string
 		URIs                    []string
@@ -65,7 +77,7 @@ func TestInstallCommand(t *testing.T) {
 	cleanup := func() {
 		_ = os.Remove(jsonnetfile.File)
 		_ = os.Remove(jsonnetfile.LockFile)
-		_ = os.RemoveAll("vendor")
+		_ = os.RemoveAll(jsonnetHome)
 		_ = os.RemoveAll("jsonnet")
 	}
 
@@ -81,7 +93,7 @@ func TestInstallCommand(t *testing.T) {
 			jsonnetFileContent(t, jsonnetfile.File, []byte(initContents))
 
 			// install something, check it writes only if required, etc.
-			installCommand("", "vendor", tc.URIs)
+			installCommand("", jsonnetHome, tc.URIs)
 			jsonnetFileContent(t, jsonnetfile.File, tc.ExpectedJsonnetFile)
 			if tc.ExpectedJsonnetLockFile != nil {
 				jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)

@@ -48,6 +48,18 @@ const want = `
 `
 
 func TestRewrite(t *testing.T) {
+	testRewriteWithJsonnetHome(t, "vendor")
+}
+
+func TestRewriteCustomJsonnetHome(t *testing.T) {
+	testRewriteWithJsonnetHome(t, "custom-vendor-dir")
+}
+
+func TestRewriteDeepCustomJsonnetHome(t *testing.T) {
+	testRewriteWithJsonnetHome(t, "custom/vendor/dir")
+}
+
+func testRewriteWithJsonnetHome(t *testing.T, jsonnetHome string) {
 	dir, err := ioutil.TempDir("", "jbrewrite")
 	require.Nil(t, err)
 	defer os.RemoveAll(dir)
@@ -56,11 +68,11 @@ func TestRewrite(t *testing.T) {
 	err = ioutil.WriteFile(name, []byte(sample), 0644)
 	require.Nil(t, err)
 
-	vendorDir := filepath.Join(dir, "vendor")
+	vendorDir := filepath.Join(dir, jsonnetHome)
 	err = os.MkdirAll(vendorDir, os.ModePerm)
 	require.Nil(t, err)
 
-	err = Rewrite(dir, "vendor", locks)
+	err = Rewrite(dir, jsonnetHome, locks)
 	require.Nil(t, err)
 
 	content, err := ioutil.ReadFile(name)

@@ -25,7 +25,7 @@ import (
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
 
-const (
+var (
 	File     = "jsonnetfile.json"
 	LockFile = "jsonnetfile.lock.json"
 )

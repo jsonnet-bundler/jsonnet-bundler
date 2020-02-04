@@ -19,19 +19,36 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	errors "github.com/pkg/errors"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 )
 
+var (
+	FailedToCheck = errors.New("failed to check for jsonnet file:")
+	AlreadyExists = errors.New("jsonnet file already exists")
+	FailedToWrite = errors.New("failed to write jsonnet file:")
+)
+
 func initCommand(dir string) int {
+	err := initOperation(dir)
+	if err != nil {
+		kingpin.Errorf("Failed to initialize: %v", err)
+		return 1
+	}
+	return 0
+}
+
+func initOperation(dir string) error {
 	exists, err := jsonnetfile.Exists(jsonnetfile.File)
-	kingpin.FatalIfError(err, "Failed to check for jsonnetfile.json")
+	if err != nil {
+		return errors.Wrap(FailedToCheck, err.Error())
+	}
 
 	if exists {
-		kingpin.Errorf("jsonnetfile.json already exists")
-		return 1
+		return AlreadyExists
 	}
 
 	s := spec.New()
@@ -44,8 +61,9 @@ func initCommand(dir string) int {
 
 	filename := filepath.Join(dir, jsonnetfile.File)
 
-	ioutil.WriteFile(filename, contents, 0644)
-	kingpin.FatalIfError(err, "Failed to write new jsonnetfile.json")
+	if err := ioutil.WriteFile(filename, contents, 0644); err != nil {
+		return errors.Wrap(FailedToWrite, err.Error())
+	}
 
-	return 0
+	return nil
 }

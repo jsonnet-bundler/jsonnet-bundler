@@ -20,13 +20,17 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
+	"gopkg.in/alecthomas/kingpin.v2"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 )
 
 const (
-	installActionName = "install"
-	updateActionName  = "update"
-	initActionName    = "init"
-	rewriteActionName = "rewrite"
+	installActionName  = "install"
+	overrideActionName = "override"
+	updateActionName   = "update"
+	initActionName     = "init"
+	rewriteActionName  = "rewrite"
 )
 
 func main() {
@@ -51,6 +55,9 @@ func Main() int {
 	installCmd := a.Command(installActionName, "Install all dependencies or install specific ones")
 	installCmdURIs := installCmd.Arg("uris", "URIs to packages to install, URLs or file paths").Strings()
 
+	overrideCmd := a.Command(overrideActionName, "Install a direct dependency without any transitive dependencies")
+	overrideCmdURIs := overrideCmd.Arg("uris", "URIs to packages to install, URLs or file paths").Strings()
+
 	updateCmd := a.Command(updateActionName, "Update all dependencies.")
 
 	rewriteCmd := a.Command(rewriteActionName, "Automatically rewrite legacy imports to absolute ones")
@@ -71,13 +78,24 @@ func Main() int {
 	case initCmd.FullCommand():
 		return initCommand(workdir)
 	case installCmd.FullCommand():
-		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs)
+		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs, true)
+	case overrideCmd.FullCommand():
+		jsonnetfile.File = "jsonnetfile.override.json"
+		jsonnetfile.LockFile = "jsonnetfile.override.lock.json"
+		err := initOperation(workdir)
+		if err != nil {
+			if errors.Cause(err) != AlreadyExists {
+				kingpin.Errorf("Failed to initialize: %v", err)
+				return 1
+			}
+		}
+		return installCommand(workdir, cfg.JsonnetHome, *overrideCmdURIs, false)
 	case updateCmd.FullCommand():
 		return updateCommand(workdir, cfg.JsonnetHome)
 	case rewriteCmd.FullCommand():
 		return rewriteCommand(workdir, cfg.JsonnetHome)
 	default:
-		installCommand(workdir, cfg.JsonnetHome, []string{})
+		installCommand(workdir, cfg.JsonnetHome, []string{}, true)
 	}
 
 	return 0

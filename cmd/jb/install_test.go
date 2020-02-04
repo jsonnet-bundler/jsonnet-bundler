@@ -81,7 +81,7 @@ func TestInstallCommand(t *testing.T) {
 			jsonnetFileContent(t, jsonnetfile.File, []byte(initContents))
 
 			// install something, check it writes only if required, etc.
-			installCommand("", "vendor", tc.URIs)
+			installCommand("", "vendor", tc.URIs, true)
 			jsonnetFileContent(t, jsonnetfile.File, tc.ExpectedJsonnetFile)
 			if tc.ExpectedJsonnetLockFile != nil {
 				jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)

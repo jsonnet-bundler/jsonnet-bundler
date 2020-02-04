@@ -41,7 +41,7 @@ func updateCommand(dir, jsonnetHome string, urls ...*url.URL) int {
 
 	// When updating, locks are ignored.
 	locks := map[string]deps.Dependency{}
-	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, locks)
+	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, locks, true)
 	kingpin.FatalIfError(err, "failed to install packages")
 
 	kingpin.FatalIfError(

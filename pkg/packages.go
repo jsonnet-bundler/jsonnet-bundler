@@ -27,9 +27,10 @@ import (
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
+
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
 
 var (
@@ -49,10 +50,10 @@ var (
 //
 // Finally, all unknown files and directories are removed from vendor/
 // The full list of locked depedencies is returned
-func Ensure(direct spec.JsonnetFile, vendorDir string, oldLocks map[string]deps.Dependency) (map[string]deps.Dependency, error) {
+func Ensure(direct spec.JsonnetFile, vendorDir string, oldLocks map[string]deps.Dependency, ensureTransitive bool) (map[string]deps.Dependency, error) {
 	// ensure all required files are in vendor
 	// This is the actual installation
-	locks, err := ensure(direct.Dependencies, vendorDir, oldLocks)
+	locks, err := ensure(direct.Dependencies, vendorDir, oldLocks, ensureTransitive)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +207,7 @@ func known(deps map[string]deps.Dependency, p string) bool {
 	return false
 }
 
-func ensure(direct map[string]deps.Dependency, vendorDir string, locks map[string]deps.Dependency) (map[string]deps.Dependency, error) {
+func ensure(direct map[string]deps.Dependency, vendorDir string, locks map[string]deps.Dependency, ensureTransitive bool) (map[string]deps.Dependency, error) {
 	deps := make(map[string]deps.Dependency)
 
 	for _, d := range direct {
@@ -239,23 +240,25 @@ func ensure(direct map[string]deps.Dependency, vendorDir string, locks map[strin
 		locks[d.Name()] = *locked
 	}
 
-	for _, d := range deps {
-		f, err := jsonnetfile.Load(filepath.Join(vendorDir, d.Name(), jsonnetfile.File))
-		if err != nil {
-			if os.IsNotExist(err) {
-				continue
+	if ensureTransitive {
+		for _, d := range deps {
+			f, err := jsonnetfile.Load(filepath.Join(vendorDir, d.Name(), jsonnetfile.File))
+			if err != nil {
+				if os.IsNotExist(err) {
+					continue
+				}
+				return nil, err
 			}
-			return nil, err
-		}
 
-		nested, err := ensure(f.Dependencies, vendorDir, locks)
-		if err != nil {
-			return nil, err
-		}
+			nested, err := ensure(f.Dependencies, vendorDir, locks, ensureTransitive)
+			if err != nil {
+				return nil, err
+			}
 
-		for _, d := range nested {
-			if _, ok := deps[d.Name()]; !ok {
-				deps[d.Name()] = d
+			for _, d := range nested {
+				if _, ok := deps[d.Name()]; !ok {
+					deps[d.Name()] = d
+				}
 			}
 		}
 	}

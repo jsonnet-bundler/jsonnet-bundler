@@ -1,12 +1,35 @@
-## 0.2.0 / 202-01-08
+# Changelog
 
-* [FEATURE] Rework installation process adding checksums (#44)
-* [FEATURE] Add local dependencies as source dependency (#36)
-* [ENHANCEMENT] Only write jsonnnet files if we made changes (#56)
-* [ENHANCEMENT] Package install optimizations for git (#38)
-* [ENHANCEMENT] Add integration tests (#35)
-* [ENHANCEMENT] Suppress detached head advice (#34)
-* [BUGFIX] Make sure to fetch git tags (#58)
+## 0.3.0 / 2020-02-08
+
+#### BREAKING:
+
+The format of `jsonnetfile.json` has changed. While v0.3.0 can
+handle the old v0.2 format, v0.2 can't and must not be used with a
+`jsonnetfile.json` created by v0.3.0
+
+#### Changes:
+
+- **[FEATURE] Absolute imports (#63)**: Introduces a new style for importing the
+  packages installed by `jb`. The `<name>/<file>` style used before caused
+  issues, as it was neither unique nor clearly defined what to import.  
+  To address this, `jb` will now create a directory structure that allows to use
+  import paths similar to Go: `host.tld/user/repo/subdir/file.libsonnet`.  
+  The old stlye is still supported, this change is backwards compatible.  
+  `jb rewrite` can be used to automatically convert your imports.
+- **[FEATURE] Generic `git` `https://`**: Previously the `host.tld/user/repo` slug
+  style was only supported for GitHub. All hosts work now.
+- **[BUGFIX]** `--jsonnetpkg-home` not working
+
+## 0.2.0 / 2020-01-08
+
+- **[FEATURE]** Rework installation process adding checksums (#44)
+- **[FEATURE]** Add local dependencies as source dependency (#36)
+- **[ENHANCEMENT]** Only write jsonnnet files if we made changes (#56)
+- **[ENHANCEMENT]** Package install optimizations for git (#38)
+- **[ENHANCEMENT]** Add integration tests (#35)
+- **[ENHANCEMENT]** Suppress detached head advice (#34)
+- **[BUGFIX]** Make sure to fetch git tags (#58)
 
 ## 0.1.0 / 2019-04-23
 

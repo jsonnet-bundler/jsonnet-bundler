@@ -70,8 +70,26 @@ steps:
       exclude:
       - tag
   depends_on:
+  - gomod
+
+- name: build-1.14-rc
+  pull: always
+  image: golang:1.14-rc
+  commands:
+  - make build
+  - make test
+  - make test-integration
+  environment:
+    CGO_ENABLED: 0
+    GO111MODULE: on
+  when:
+    event:
+      exclude:
+      - tag
+  depends_on:
   - build-1.11
   - build-1.12
+  - build-1.13
 
 - name: generate
   pull: always

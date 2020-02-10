@@ -42,7 +42,8 @@
 
     build('1.11'),
     build('1.12'),
-    build('1.13') + {depends_on: ["build-1.11", "build-1.12"]},
+    build('1.13'),
+    build('1.14-rc') + {depends_on: ["build-1.11", "build-1.12", "build-1.13"]},
 
     golang() {
       name: 'generate',

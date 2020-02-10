@@ -12,13 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spec
+package v3
 
 import (
 	"encoding/json"
+	"errors"
 	"sort"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v3/deps"
+)
+
+var (
+	ErrIncompatibleJsonnetfile = errors.New("incompatible Jsonentfile found")
 )
 
 // JsonnetFile is the structure of a `.json` file describing a set of jsonnet
@@ -42,6 +47,7 @@ func New() JsonnetFile {
 // jsonFile is the json representation of a JsonnetFile, which is different for
 // compatibility reasons.
 type jsonFile struct {
+	Version       int               `json:"version"`
 	Dependencies  []deps.Dependency `json:"dependencies"`
 	LegacyImports bool              `json:"legacyImports"`
 }
@@ -59,14 +65,18 @@ func (jf *JsonnetFile) UnmarshalJSON(data []byte) error {
 	for _, d := range s.Dependencies {
 		jf.Dependencies[d.Name()] = d
 	}
+
 	jf.LegacyImports = s.LegacyImports
+
 	return nil
 }
 
 // MarshalJSON serializes a JsonnetFile into json of the format of a `jsonFile`
 func (jf JsonnetFile) MarshalJSON() ([]byte, error) {
 	var s jsonFile
-	s.LegacyImports = jf.LegacyImports
+
+	s.Version = 3
+
 	for _, d := range jf.Dependencies {
 		s.Dependencies = append(s.Dependencies, d)
 	}

@@ -21,15 +21,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
+	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v3"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v3/deps"
+	"github.com/stretchr/testify/assert"
 )
 
-// TODO: Change legacyImports to false eventually
-const initContents = `{"dependencies": [], "legacyImports": true}`
+const initContents = `{"version": 3, "dependencies": [], "legacyImports": false}`
 
 func TestInstallCommand(t *testing.T) {
 	testInstallCommandWithJsonnetHome(t, "vendor")
@@ -60,15 +58,15 @@ func testInstallCommandWithJsonnetHome(t *testing.T, jsonnetHome string) {
 			Name:                    "OneURL",
 			URIs:                    []string{"github.com/jsonnet-bundler/jsonnet-bundler@v0.1.0"},
 			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}], "legacyImports": true}`),
-			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f", "sum": "W1uI550rQ66axRpPXA2EZDquyPg/5PHZlvUz1NEzefg="}], "legacyImports": false}`),
+			ExpectedJsonnetFile:     []byte(`{"version": 3, "dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}], "legacyImports": false}`),
+			ExpectedJsonnetLockFile: []byte(`{"version": 3, "dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f", "sum": "W1uI550rQ66axRpPXA2EZDquyPg/5PHZlvUz1NEzefg="}], "legacyImports": false}`),
 		},
 		{
 			Name:                    "Local",
 			URIs:                    []string{"jsonnet/foobar"},
 			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}], "legacyImports": true}`),
-			ExpectedJsonnetLockFile: []byte(`{"dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}], "legacyImports": false}`),
+			ExpectedJsonnetFile:     []byte(`{"version": 3, "dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}], "legacyImports": false}`),
+			ExpectedJsonnetLockFile: []byte(`{"version": 3, "dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}], "legacyImports": false}`),
 		},
 	}
 
@@ -118,19 +116,19 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 	testcases := []struct {
 		Name             string
 		JsonnetFileBytes []byte
-		NewJsonnetFile   spec.JsonnetFile
+		NewJsonnetFile   v3.JsonnetFile
 		ExpectWrite      bool
 	}{
 		{
 			Name:             "NoDiffEmpty",
 			JsonnetFileBytes: []byte(`{}`),
-			NewJsonnetFile:   spec.New(),
+			NewJsonnetFile:   v3.New(),
 			ExpectWrite:      false,
 		},
 		{
 			Name:             "NoDiffNotEmpty",
 			JsonnetFileBytes: []byte(`{"dependencies": [{"version": "master"}]}`),
-			NewJsonnetFile: spec.JsonnetFile{
+			NewJsonnetFile: v3.JsonnetFile{
 				Dependencies: map[string]deps.Dependency{
 					"": {
 						Version: "master",
@@ -142,7 +140,7 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 		{
 			Name:             "DiffVersion",
 			JsonnetFileBytes: []byte(`{"dependencies": [{"version": "1.0"}]}`),
-			NewJsonnetFile: spec.JsonnetFile{
+			NewJsonnetFile: v3.JsonnetFile{
 				Dependencies: map[string]deps.Dependency{
 					"": {
 						Version: "2.0",
@@ -154,7 +152,7 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 		{
 			Name:             "Diff",
 			JsonnetFileBytes: []byte(`{}`),
-			NewJsonnetFile: spec.JsonnetFile{
+			NewJsonnetFile: v3.JsonnetFile{
 				Dependencies: map[string]deps.Dependency{
 					"github.com/foobar/foobar": {
 						Source: deps.Source{

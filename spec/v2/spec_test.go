@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,6 +25,7 @@ import (
 const jsonJF = `{
   "dependencies": [
     {
+      "name": "grafana-builder",
       "source": {
         "git": {
           "remote": "https://github.com/grafana/jsonnet-libs",
@@ -36,7 +36,7 @@ const jsonJF = `{
       "sum": "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE="
     },
     {
-      "name": "prometheus",
+      "name": "prometheus-mixin",
       "source": {
         "git": {
           "remote": "https://github.com/prometheus/prometheus",
@@ -46,36 +46,29 @@ const jsonJF = `{
       "version": "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
       "sum": "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY="
     }
-  ],
-  "legacyImports": false
+  ]
 }`
 
 func testData() JsonnetFile {
 	return JsonnetFile{
-		LegacyImports: false,
-		Dependencies: map[string]deps.Dependency{
-			"github.com/grafana/jsonnet-libs/grafana-builder": {
-				Source: deps.Source{
-					GitSource: &deps.Git{
-						Scheme: deps.GitSchemeHTTPS,
-						Host:   "github.com",
-						User:   "grafana",
-						Repo:   "jsonnet-libs",
-						Subdir: "/grafana-builder",
+		Dependencies: map[string]Dependency{
+			"grafana-builder": {
+				Name: "grafana-builder",
+				Source: Source{
+					GitSource: &GitSource{
+						Remote: "https://github.com/grafana/jsonnet-libs",
+						Subdir: "grafana-builder",
 					},
 				},
 				Version: "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
 				Sum:     "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
 			},
-			"github.com/prometheus/prometheus/documentation/prometheus-mixin": {
-				LegacyNameCompat: "prometheus",
-				Source: deps.Source{
-					GitSource: &deps.Git{
-						Scheme: deps.GitSchemeHTTPS,
-						Host:   "github.com",
-						User:   "prometheus",
-						Repo:   "prometheus",
-						Subdir: "/documentation/prometheus-mixin",
+			"prometheus-mixin": {
+				Name: "prometheus-mixin",
+				Source: Source{
+					GitSource: &GitSource{
+						Remote: "https://github.com/prometheus/prometheus",
+						Subdir: "documentation/prometheus-mixin",
 					},
 				},
 				Version: "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",

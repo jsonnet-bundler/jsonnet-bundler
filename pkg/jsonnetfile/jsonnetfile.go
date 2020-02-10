@@ -19,10 +19,10 @@ import (
 	"io/ioutil"
 	"os"
 
+	v2 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v2"
+	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v3"
+	depsv3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v3/deps"
 	"github.com/pkg/errors"
-
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
 )
 
 const (
@@ -30,13 +30,16 @@ const (
 	LockFile = "jsonnetfile.lock.json"
 )
 
-var ErrNoFile = errors.New("no jsonnetfile")
+var (
+	ErrNoFile   = errors.New("no jsonnetfile")
+	ErrUpdateJB = errors.New("jsonnetfile version unknown, update jb")
+)
 
 // Load reads a jsonnetfile.(lock).json from disk
-func Load(filepath string) (spec.JsonnetFile, error) {
+func Load(filepath string) (v3.JsonnetFile, error) {
 	bytes, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return spec.New(), err
+		return v3.New(), err
 	}
 
 	return Unmarshal(bytes)
@@ -44,19 +47,56 @@ func Load(filepath string) (spec.JsonnetFile, error) {
 
 // Unmarshal creates a spec.JsonnetFile from bytes. Empty bytes
 // will create an empty spec.
-func Unmarshal(bytes []byte) (spec.JsonnetFile, error) {
-	m := spec.New()
+func Unmarshal(bytes []byte) (v3.JsonnetFile, error) {
+	m := v3.New()
+
 	if len(bytes) == 0 {
 		return m, nil
 	}
-	if err := json.Unmarshal(bytes, &m); err != nil {
-		return m, errors.Wrap(err, "failed to unmarshal file")
-	}
-	if m.Dependencies == nil {
-		m.Dependencies = make(map[string]deps.Dependency)
+
+	versions := struct {
+		Version float64 `json:"version"`
+	}{}
+
+	err := json.Unmarshal(bytes, &versions)
+	if err != nil {
+		return m, err
 	}
 
-	return m, nil
+	if versions.Version > 3 {
+		return m, ErrUpdateJB
+	}
+
+	if versions.Version == 3 {
+		if err := json.Unmarshal(bytes, &m); err != nil {
+			return m, errors.Wrap(err, "failed to unmarshal v3 file")
+		}
+
+		return m, nil
+	} else {
+		var mv2 v2.JsonnetFile
+		if err := json.Unmarshal(bytes, &mv2); err != nil {
+			return m, errors.Wrap(err, "failed to unmarshal v2 file")
+		}
+
+		for name, dep := range mv2.Dependencies {
+			var d depsv3.Dependency
+			if dep.Source.GitSource != nil {
+				d = *depsv3.Parse("", dep.Source.GitSource.Remote)
+				d.Source.GitSource.Subdir = dep.Source.GitSource.Subdir
+			}
+			if dep.Source.LocalSource != nil {
+				d = *depsv3.Parse(dep.Source.LocalSource.Directory, dep.Source.GitSource.Remote)
+			}
+
+			d.Sum = dep.Sum
+			d.Version = dep.Version
+
+			m.Dependencies[name] = d
+		}
+
+		return m, nil
+	}
 }
 
 // Exists returns whether the file at the given path exists

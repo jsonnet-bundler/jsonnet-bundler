@@ -68,6 +68,9 @@ func (gs *Git) UnmarshalJSON(data []byte) error {
 	}
 
 	tmp := parseGit(j.Remote)
+	if tmp == nil {
+		return fmt.Errorf("unable to parse git url `%s` ", j.Remote)
+	}
 	gs.Host = tmp.Source.GitSource.Host
 	gs.User = tmp.Source.GitSource.User
 	gs.Repo = tmp.Source.GitSource.Repo

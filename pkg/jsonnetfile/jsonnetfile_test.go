@@ -21,48 +21,14 @@ import (
 	"testing"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v3"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v3/deps"
+	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"github.com/stretchr/testify/assert"
 )
 
 const notExist = "/this/does/not/exist"
 
-const jsonV1 = `{
-  "dependencies": [
-    {
-      "name": "grafana-builder",
-      "source": {
-        "git": {
-          "remote": "https://github.com/grafana/jsonnet-libs",
-          "subdir": "grafana-builder"
-        }
-      },
-      "version": "54865853ebc1f901964e25a2e7a0e4d2cb6b9648"
-    }
-  ]
-}`
-
-var v1Jsonnetfile = v3.JsonnetFile{
-	Dependencies: map[string]deps.Dependency{
-		"grafana-builder": {
-			Source: deps.Source{
-				GitSource: &deps.Git{
-					Scheme: deps.GitSchemeHTTPS,
-					Host:   "github.com",
-					User:   "grafana",
-					Repo:   "jsonnet-libs",
-					Subdir: "grafana-builder",
-				},
-			},
-			Version: "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
-			Sum:     "",
-		},
-	},
-	LegacyImports: true,
-}
-
-const v2JSON = `{
+const v0JSON = `{
   "dependencies": [
     {
       "name": "grafana-builder",
@@ -89,7 +55,7 @@ const v2JSON = `{
   ]
 }`
 
-var v2Jsonnetfile = v3.JsonnetFile{
+var v0Jsonnetfile = v1.JsonnetFile{
 	Dependencies: map[string]deps.Dependency{
 		"grafana-builder": {
 			Source: deps.Source{
@@ -121,8 +87,8 @@ var v2Jsonnetfile = v3.JsonnetFile{
 	LegacyImports: true,
 }
 
-const v3JSON = `{
-  "version": 3,
+const v1JSON = `{
+  "version": 1,
   "dependencies": [
     {
       "source": {
@@ -149,7 +115,7 @@ const v3JSON = `{
   "legacyImports": false
 }`
 
-var v3Jsonnetfile = v3.JsonnetFile{
+var v1Jsonnetfile = v1.JsonnetFile{
 	Dependencies: map[string]deps.Dependency{
 		"github.com/grafana/jsonnet-libs/grafana-builder": {
 			Source: deps.Source{
@@ -186,28 +152,23 @@ func TestVersions(t *testing.T) {
 	tests := []struct {
 		Name        string
 		JSON        string
-		Jsonnetfile v3.JsonnetFile
+		Jsonnetfile v1.JsonnetFile
 		Error       error
 	}{
 		{
+			Name:        "v0",
+			JSON:        v0JSON,
+			Jsonnetfile: v0Jsonnetfile,
+		},
+		{
 			Name:        "v1",
-			JSON:        jsonV1,
+			JSON:        v1JSON,
 			Jsonnetfile: v1Jsonnetfile,
-		},
-		{
-			Name:        "v2",
-			JSON:        v2JSON,
-			Jsonnetfile: v2Jsonnetfile,
-		},
-		{
-			Name:        "v3",
-			JSON:        v3JSON,
-			Jsonnetfile: v3Jsonnetfile,
 		},
 		{
 			Name:        "v100",
 			JSON:        `{"version": 100}`,
-			Jsonnetfile: v3.New(),
+			Jsonnetfile: v1.New(),
 			Error:       jsonnetfile.ErrUpdateJB,
 		},
 	}
@@ -222,7 +183,6 @@ func TestVersions(t *testing.T) {
 }
 
 func TestLoadV3(t *testing.T) {
-
 	tempDir, err := ioutil.TempDir("", "jb-load-jsonnetfile")
 	if err != nil {
 		t.Fatal(err)
@@ -230,12 +190,12 @@ func TestLoadV3(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	tempFile := filepath.Join(tempDir, jsonnetfile.File)
-	err = ioutil.WriteFile(tempFile, []byte(v3JSON), os.ModePerm)
+	err = ioutil.WriteFile(tempFile, []byte(v1JSON), os.ModePerm)
 	assert.Nil(t, err)
 
 	jf, err := jsonnetfile.Load(tempFile)
 	assert.Nil(t, err)
-	assert.Equal(t, v3Jsonnetfile, jf)
+	assert.Equal(t, v1Jsonnetfile, jf)
 }
 
 func TestLoadEmpty(t *testing.T) {
@@ -247,18 +207,18 @@ func TestLoadEmpty(t *testing.T) {
 
 	// write empty json file
 	tempFile := filepath.Join(tempDir, jsonnetfile.File)
-	err = ioutil.WriteFile(tempFile, []byte(`{"version":3}`), os.ModePerm)
+	err = ioutil.WriteFile(tempFile, []byte(`{"version":1}`), os.ModePerm)
 	assert.Nil(t, err)
 
 	// expect it to be loaded properly
 	got, err := jsonnetfile.Load(tempFile)
 	assert.Nil(t, err)
-	assert.Equal(t, v3.New(), got)
+	assert.Equal(t, v1.New(), got)
 }
 
 func TestLoadNotExist(t *testing.T) {
 	jf, err := jsonnetfile.Load(notExist)
-	assert.Equal(t, v3.New(), jf)
+	assert.Equal(t, v1.New(), jf)
 	assert.Error(t, err)
 }
 

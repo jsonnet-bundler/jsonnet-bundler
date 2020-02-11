@@ -19,9 +19,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	v2 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v2"
-	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v3"
-	depsv3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v3/deps"
+	v0 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v0"
+	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
+	depsv1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"github.com/pkg/errors"
 )
 
@@ -36,10 +36,10 @@ var (
 )
 
 // Load reads a jsonnetfile.(lock).json from disk
-func Load(filepath string) (v3.JsonnetFile, error) {
+func Load(filepath string) (v1.JsonnetFile, error) {
 	bytes, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return v3.New(), err
+		return v1.New(), err
 	}
 
 	return Unmarshal(bytes)
@@ -47,8 +47,8 @@ func Load(filepath string) (v3.JsonnetFile, error) {
 
 // Unmarshal creates a spec.JsonnetFile from bytes. Empty bytes
 // will create an empty spec.
-func Unmarshal(bytes []byte) (v3.JsonnetFile, error) {
-	m := v3.New()
+func Unmarshal(bytes []byte) (v1.JsonnetFile, error) {
+	m := v1.New()
 
 	if len(bytes) == 0 {
 		return m, nil
@@ -63,30 +63,30 @@ func Unmarshal(bytes []byte) (v3.JsonnetFile, error) {
 		return m, err
 	}
 
-	if versions.Version > 3 {
+	if versions.Version > 1 {
 		return m, ErrUpdateJB
 	}
 
-	if versions.Version == 3 {
+	if versions.Version == 1 {
 		if err := json.Unmarshal(bytes, &m); err != nil {
-			return m, errors.Wrap(err, "failed to unmarshal v3 file")
+			return m, errors.Wrap(err, "failed to unmarshal v1 file")
 		}
 
 		return m, nil
 	} else {
-		var mv2 v2.JsonnetFile
-		if err := json.Unmarshal(bytes, &mv2); err != nil {
-			return m, errors.Wrap(err, "failed to unmarshal v2 file")
+		var mv0 v0.JsonnetFile
+		if err := json.Unmarshal(bytes, &mv0); err != nil {
+			return m, errors.Wrap(err, "failed to unmarshal jsonnetfile")
 		}
 
-		for name, dep := range mv2.Dependencies {
-			var d depsv3.Dependency
+		for name, dep := range mv0.Dependencies {
+			var d depsv1.Dependency
 			if dep.Source.GitSource != nil {
-				d = *depsv3.Parse("", dep.Source.GitSource.Remote)
+				d = *depsv1.Parse("", dep.Source.GitSource.Remote)
 				d.Source.GitSource.Subdir = dep.Source.GitSource.Subdir
 			}
 			if dep.Source.LocalSource != nil {
-				d = *depsv3.Parse(dep.Source.LocalSource.Directory, dep.Source.GitSource.Remote)
+				d = *depsv1.Parse(dep.Source.LocalSource.Directory, dep.Source.GitSource.Remote)
 			}
 
 			d.Sum = dep.Sum

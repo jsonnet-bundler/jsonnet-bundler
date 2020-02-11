@@ -18,7 +18,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v3/deps"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"github.com/stretchr/testify/assert"
 )
 

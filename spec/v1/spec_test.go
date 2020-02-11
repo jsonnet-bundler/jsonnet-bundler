@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v3
+package spec
 
 import (
 	"encoding/json"
 	"testing"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v3/deps"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const jsonJF = `{
-  "version": 3,
+  "version": 1,
   "dependencies": [
     {
       "source": {

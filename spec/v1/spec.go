@@ -14,22 +14,80 @@
 
 package spec
 
+import (
+	"encoding/json"
+	"errors"
+	"sort"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
+)
+
+var (
+	ErrIncompatibleJsonnetfile = errors.New("incompatible Jsonentfile found")
+)
+
+// JsonnetFile is the structure of a `.json` file describing a set of jsonnet
+// dependencies. It is used for both, the jsonnetFile and the lockFile.
 type JsonnetFile struct {
-	Dependencies []Dependency `json:"dependencies"`
+	// List of dependencies
+	Dependencies map[string]deps.Dependency
+
+	// Symlink files to old location
+	LegacyImports bool
 }
 
-type Source struct {
-	GitSource *GitSource `json:"git"`
+// New returns a new JsonnetFile with the dependencies map initialized
+func New() JsonnetFile {
+	return JsonnetFile{
+		Dependencies:  make(map[string]deps.Dependency),
+		LegacyImports: true,
+	}
 }
 
-type GitSource struct {
-	Remote string `json:"remote"`
-	Subdir string `json:"subdir"`
+// jsonFile is the json representation of a JsonnetFile, which is different for
+// compatibility reasons.
+type jsonFile struct {
+	Version       int               `json:"version"`
+	Dependencies  []deps.Dependency `json:"dependencies"`
+	LegacyImports bool              `json:"legacyImports"`
 }
 
-type Dependency struct {
-	Name      string `json:"name"`
-	Source    Source `json:"source"`
-	Version   string `json:"version"`
-	DepSource string `json:"-"`
+// UnmarshalJSON unmarshals a `jsonFile`'s json into a JsonnetFile
+func (jf *JsonnetFile) UnmarshalJSON(data []byte) error {
+	var s jsonFile
+	s.LegacyImports = jf.LegacyImports // adpot default
+
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	jf.Dependencies = make(map[string]deps.Dependency)
+	for _, d := range s.Dependencies {
+		jf.Dependencies[d.Name()] = d
+	}
+
+	jf.LegacyImports = s.LegacyImports
+
+	return nil
+}
+
+// MarshalJSON serializes a JsonnetFile into json of the format of a `jsonFile`
+func (jf JsonnetFile) MarshalJSON() ([]byte, error) {
+	var s jsonFile
+
+	s.Version = 1
+
+	for _, d := range jf.Dependencies {
+		s.Dependencies = append(s.Dependencies, d)
+	}
+
+	sort.SliceStable(s.Dependencies, func(i int, j int) bool {
+		return s.Dependencies[i].Name() < s.Dependencies[j].Name()
+	})
+
+	if s.Dependencies == nil {
+		s.Dependencies = make([]deps.Dependency, 0, 0)
+	}
+
+	return json.Marshal(s)
 }

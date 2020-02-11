@@ -21,8 +21,8 @@ import (
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v3"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v3/deps"
+	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 

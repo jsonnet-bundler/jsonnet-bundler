@@ -22,12 +22,12 @@ import (
 	"testing"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v3"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v3/deps"
+	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"github.com/stretchr/testify/assert"
 )
 
-const initContents = `{"version": 3, "dependencies": [], "legacyImports": false}`
+const initContents = `{"version": 1, "dependencies": [], "legacyImports": false}`
 
 func TestInstallCommand(t *testing.T) {
 	testInstallCommandWithJsonnetHome(t, "vendor")
@@ -58,15 +58,15 @@ func testInstallCommandWithJsonnetHome(t *testing.T, jsonnetHome string) {
 			Name:                    "OneURL",
 			URIs:                    []string{"github.com/jsonnet-bundler/jsonnet-bundler@v0.1.0"},
 			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"version": 3, "dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}], "legacyImports": false}`),
-			ExpectedJsonnetLockFile: []byte(`{"version": 3, "dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f", "sum": "W1uI550rQ66axRpPXA2EZDquyPg/5PHZlvUz1NEzefg="}], "legacyImports": false}`),
+			ExpectedJsonnetFile:     []byte(`{"version": 1, "dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "v0.1.0"}], "legacyImports": false}`),
+			ExpectedJsonnetLockFile: []byte(`{"version": 1, "dependencies": [{"source": {"git": {"remote": "https://github.com/jsonnet-bundler/jsonnet-bundler", "subdir": ""}}, "version": "080f157c7fb85ad0281ea78f6c641eaa570a582f", "sum": "W1uI550rQ66axRpPXA2EZDquyPg/5PHZlvUz1NEzefg="}], "legacyImports": false}`),
 		},
 		{
 			Name:                    "Local",
 			URIs:                    []string{"jsonnet/foobar"},
 			ExpectedCode:            0,
-			ExpectedJsonnetFile:     []byte(`{"version": 3, "dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}], "legacyImports": false}`),
-			ExpectedJsonnetLockFile: []byte(`{"version": 3, "dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}], "legacyImports": false}`),
+			ExpectedJsonnetFile:     []byte(`{"version": 1, "dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}], "legacyImports": false}`),
+			ExpectedJsonnetLockFile: []byte(`{"version": 1, "dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}], "legacyImports": false}`),
 		},
 	}
 

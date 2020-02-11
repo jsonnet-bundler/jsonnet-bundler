@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v3/deps"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
 var expr = regexp.MustCompile(`(?mU)(import ["'])(.*)(\/.*["'])`)

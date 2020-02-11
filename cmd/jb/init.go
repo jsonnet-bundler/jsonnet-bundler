@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v3"
+	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -33,7 +33,7 @@ func initCommand(dir string) int {
 		return 1
 	}
 
-	s := v3.New()
+	s := v1.New()
 	// TODO: disable them by default eventually
 	// s.LegacyImports = false
 

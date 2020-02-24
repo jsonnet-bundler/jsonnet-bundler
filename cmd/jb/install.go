@@ -26,7 +26,7 @@ import (
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
+	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
@@ -78,7 +78,7 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 		"updating jsonnetfile.json")
 
 	kingpin.FatalIfError(
-		writeChangedJsonnetFile(jblockfilebytes, &v3.JsonnetFile{Dependencies: locked}, filepath.Join(dir, jsonnetfile.LockFile)),
+		writeChangedJsonnetFile(jblockfilebytes, &v1.JsonnetFile{Dependencies: locked}, filepath.Join(dir, jsonnetfile.LockFile)),
 		"updating jsonnetfile.lock.json")
 
 	return 0
@@ -102,7 +102,7 @@ func writeJSONFile(name string, d interface{}) error {
 	return ioutil.WriteFile(name, b, 0644)
 }
 
-func writeChangedJsonnetFile(originalBytes []byte, modified *v3.JsonnetFile, path string) error {
+func writeChangedJsonnetFile(originalBytes []byte, modified *v1.JsonnetFile, path string) error {
 	origJsonnetFile, err := jsonnetfile.Unmarshal(originalBytes)
 	if err != nil {
 		return err

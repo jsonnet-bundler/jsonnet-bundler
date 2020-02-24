@@ -21,7 +21,7 @@ import (
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
+	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -47,7 +47,7 @@ func updateCommand(dir, jsonnetHome string, urls ...*url.URL) int {
 		writeJSONFile(filepath.Join(dir, jsonnetfile.File), jsonnetFile),
 		"updating jsonnetfile.json")
 	kingpin.FatalIfError(
-		writeJSONFile(filepath.Join(dir, jsonnetfile.LockFile), v3.JsonnetFile{Dependencies: locked}),
+		writeJSONFile(filepath.Join(dir, jsonnetfile.LockFile), v1.JsonnetFile{Dependencies: locked}),
 		"updating jsonnetfile.lock.json")
 	return 0
 }

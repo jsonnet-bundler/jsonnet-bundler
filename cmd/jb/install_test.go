@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	v3 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
+	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"github.com/stretchr/testify/assert"
 )
@@ -116,19 +116,19 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 	testcases := []struct {
 		Name             string
 		JsonnetFileBytes []byte
-		NewJsonnetFile   v3.JsonnetFile
+		NewJsonnetFile   v1.JsonnetFile
 		ExpectWrite      bool
 	}{
 		{
 			Name:             "NoDiffEmpty",
 			JsonnetFileBytes: []byte(`{}`),
-			NewJsonnetFile:   v3.New(),
+			NewJsonnetFile:   v1.New(),
 			ExpectWrite:      false,
 		},
 		{
 			Name:             "NoDiffNotEmpty",
 			JsonnetFileBytes: []byte(`{"dependencies": [{"version": "master"}]}`),
-			NewJsonnetFile: v3.JsonnetFile{
+			NewJsonnetFile: v1.JsonnetFile{
 				Dependencies: map[string]deps.Dependency{
 					"": {
 						Version: "master",
@@ -140,7 +140,7 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 		{
 			Name:             "DiffVersion",
 			JsonnetFileBytes: []byte(`{"dependencies": [{"version": "1.0"}]}`),
-			NewJsonnetFile: v3.JsonnetFile{
+			NewJsonnetFile: v1.JsonnetFile{
 				Dependencies: map[string]deps.Dependency{
 					"": {
 						Version: "2.0",
@@ -152,7 +152,7 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 		{
 			Name:             "Diff",
 			JsonnetFileBytes: []byte(`{}`),
-			NewJsonnetFile: v3.JsonnetFile{
+			NewJsonnetFile: v1.JsonnetFile{
 				Dependencies: map[string]deps.Dependency{
 					"github.com/foobar/foobar": {
 						Source: deps.Source{

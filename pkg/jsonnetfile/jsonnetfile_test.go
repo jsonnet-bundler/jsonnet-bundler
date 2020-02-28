@@ -183,7 +183,7 @@ func TestVersions(t *testing.T) {
 	}
 }
 
-func TestLoadV3(t *testing.T) {
+func TestLoadV1(t *testing.T) {
 	tempDir, err := ioutil.TempDir("", "jb-load-jsonnetfile")
 	if err != nil {
 		t.Fatal(err)

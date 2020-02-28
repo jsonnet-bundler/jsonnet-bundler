@@ -16,15 +16,12 @@ package spec
 
 import (
 	"encoding/json"
-	"errors"
 	"sort"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
-var (
-	ErrIncompatibleJsonnetfile = errors.New("incompatible Jsonentfile found")
-)
+const Version uint = 1
 
 // JsonnetFile is the structure of a `.json` file describing a set of jsonnet
 // dependencies. It is used for both, the jsonnetFile and the lockFile.
@@ -47,7 +44,7 @@ func New() JsonnetFile {
 // jsonFile is the json representation of a JsonnetFile, which is different for
 // compatibility reasons.
 type jsonFile struct {
-	Version       int               `json:"version"`
+	Version       uint              `json:"version"`
 	Dependencies  []deps.Dependency `json:"dependencies"`
 	LegacyImports bool              `json:"legacyImports"`
 }
@@ -75,7 +72,7 @@ func (jf *JsonnetFile) UnmarshalJSON(data []byte) error {
 func (jf JsonnetFile) MarshalJSON() ([]byte, error) {
 	var s jsonFile
 
-	s.Version = 1
+	s.Version = Version
 
 	for _, d := range jf.Dependencies {
 		s.Dependencies = append(s.Dependencies, d)

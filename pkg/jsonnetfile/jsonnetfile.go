@@ -32,7 +32,6 @@ const (
 )
 
 var (
-	ErrNoFile   = errors.New("no jsonnetfile")
 	ErrUpdateJB = errors.New("jsonnetfile version unknown, update jb")
 )
 
@@ -56,7 +55,7 @@ func Unmarshal(bytes []byte) (v1.JsonnetFile, error) {
 	}
 
 	versions := struct {
-		Version float64 `json:"version"`
+		Version uint `json:"version"`
 	}{}
 
 	err := json.Unmarshal(bytes, &versions)
@@ -64,11 +63,11 @@ func Unmarshal(bytes []byte) (v1.JsonnetFile, error) {
 		return m, err
 	}
 
-	if versions.Version > 1 {
+	if versions.Version > v1.Version {
 		return m, ErrUpdateJB
 	}
 
-	if versions.Version == 1 {
+	if versions.Version == v1.Version {
 		if err := json.Unmarshal(bytes, &m); err != nil {
 			return m, errors.Wrap(err, "failed to unmarshal v1 file")
 		}

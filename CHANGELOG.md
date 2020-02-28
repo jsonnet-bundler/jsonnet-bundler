@@ -17,6 +17,9 @@ handle the old v0.2 format, v0.2 can't and must not be used with a
   import paths similar to Go: `host.tld/user/repo/subdir/file.libsonnet`.  
   The old stlye is still supported, this change is backwards compatible.  
   `jb rewrite` can be used to automatically convert your imports.
+- **[FEATURE] `jsonnetfile.json` versions (#85)**: Adds a `verison` key to
+  `jsonnetfile.json`, so that `jb` can automatically recognize the schema
+  version and handle it properly, instead of panicking.
 - **[FEATURE] Generic `git` `https://` (#73)**: Previously the `host.tld/user/repo` slug
   style was only supported for GitHub. All hosts work now.
 - **[BUGFIX]** `--jsonnetpkg-home` not working (#80)

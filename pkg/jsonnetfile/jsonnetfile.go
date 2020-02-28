@@ -19,10 +19,11 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/pkg/errors"
+
 	v0 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v0"
 	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 	depsv1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
-	"github.com/pkg/errors"
 )
 
 const (

@@ -20,10 +20,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
-	"github.com/stretchr/testify/assert"
 )
 
 const notExist = "/this/does/not/exist"

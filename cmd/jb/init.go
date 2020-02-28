@@ -19,9 +19,10 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"gopkg.in/alecthomas/kingpin.v2"
+
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 func initCommand(dir string) int {

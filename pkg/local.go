@@ -19,8 +19,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"github.com/pkg/errors"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
 type LocalPackage struct {

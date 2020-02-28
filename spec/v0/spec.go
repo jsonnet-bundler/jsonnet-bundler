@@ -19,6 +19,8 @@ import (
 	"sort"
 )
 
+const Version = 0
+
 // JsonnetFile is the structure of a `.json` file describing a set of jsonnet
 // dependencies. It is used for both, the jsonnetFile and the lockFile.
 type JsonnetFile struct {

@@ -23,7 +23,6 @@ import (
 
 	v0 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v0"
 	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
-	depsv1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
 const (
@@ -63,39 +62,20 @@ func Unmarshal(bytes []byte) (v1.JsonnetFile, error) {
 		return m, err
 	}
 
-	if versions.Version > v1.Version {
-		return m, ErrUpdateJB
-	}
-
-	if versions.Version == v1.Version {
-		if err := json.Unmarshal(bytes, &m); err != nil {
-			return m, errors.Wrap(err, "failed to unmarshal v1 file")
-		}
-
-		return m, nil
-	} else {
+	switch versions.Version {
+	case v0.Version:
 		var mv0 v0.JsonnetFile
 		if err := json.Unmarshal(bytes, &mv0); err != nil {
 			return m, errors.Wrap(err, "failed to unmarshal jsonnetfile")
 		}
-
-		for name, dep := range mv0.Dependencies {
-			var d depsv1.Dependency
-			if dep.Source.GitSource != nil {
-				d = *depsv1.Parse("", dep.Source.GitSource.Remote)
-				d.Source.GitSource.Subdir = dep.Source.GitSource.Subdir
-			}
-			if dep.Source.LocalSource != nil {
-				d = *depsv1.Parse(dep.Source.LocalSource.Directory, dep.Source.GitSource.Remote)
-			}
-
-			d.Sum = dep.Sum
-			d.Version = dep.Version
-
-			m.Dependencies[name] = d
+		return v1.FromV0(mv0)
+	case v1.Version:
+		if err := json.Unmarshal(bytes, &m); err != nil {
+			return m, errors.Wrap(err, "failed to unmarshal v1 file")
 		}
-
 		return m, nil
+	default:
+		return m, ErrUpdateJB
 	}
 }
 

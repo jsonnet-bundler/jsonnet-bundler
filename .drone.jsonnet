@@ -28,7 +28,6 @@
       'make test',
       'make test-integration',
     ],
-    depends_on: ["gomod"]
   },
 
   steps: [
@@ -43,7 +42,7 @@
     build('1.11'),
     build('1.12'),
     build('1.13'),
-    build('1.14-rc') + {depends_on: ["build-1.11", "build-1.12", "build-1.13"]},
+    build('1.14-rc'),
 
     golang() {
       name: 'generate',
@@ -52,7 +51,6 @@
         'make generate',
         'git diff --exit-code',
       ],
-      depends_on: ["build-1.13"]
     },
   ],
 }

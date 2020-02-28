@@ -28,8 +28,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec/deps"
+	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
 var (
@@ -49,7 +49,7 @@ var (
 //
 // Finally, all unknown files and directories are removed from vendor/
 // The full list of locked depedencies is returned
-func Ensure(direct spec.JsonnetFile, vendorDir string, oldLocks map[string]deps.Dependency) (map[string]deps.Dependency, error) {
+func Ensure(direct v1.JsonnetFile, vendorDir string, oldLocks map[string]deps.Dependency) (map[string]deps.Dependency, error) {
 	// ensure all required files are in vendor
 	// This is the actual installation
 	locks, err := ensure(direct.Dependencies, vendorDir, oldLocks)

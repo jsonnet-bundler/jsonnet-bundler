@@ -19,10 +19,10 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
+	"gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 )
 
 func initCommand(dir string) int {
@@ -34,7 +34,7 @@ func initCommand(dir string) int {
 		return 1
 	}
 
-	s := spec.New()
+	s := v1.New()
 	// TODO: disable them by default eventually
 	// s.LegacyImports = false
 

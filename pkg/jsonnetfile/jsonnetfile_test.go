@@ -210,7 +210,7 @@ func TestLoadEmpty(t *testing.T) {
 
 	// write empty json file
 	tempFile := filepath.Join(tempDir, jsonnetfile.File)
-	err = ioutil.WriteFile(tempFile, []byte(`{"version":1}`), os.ModePerm)
+	err = ioutil.WriteFile(tempFile, []byte(`{}`), os.ModePerm)
 	assert.Nil(t, err)
 
 	// expect it to be loaded properly

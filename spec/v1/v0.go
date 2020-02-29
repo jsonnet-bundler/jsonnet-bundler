@@ -18,8 +18,10 @@ func FromV0(mv0 v0.JsonnetFile) (JsonnetFile, error) {
 		case old.Source.GitSource != nil:
 			d = *deps.Parse("", old.Source.GitSource.Remote)
 
-			subdir := filepath.Clean("/" + old.Source.GitSource.Subdir)
-			d.Source.GitSource.Subdir = subdir
+			if old.Source.GitSource.Subdir != "" {
+				subdir := filepath.Clean("/" + old.Source.GitSource.Subdir)
+				d.Source.GitSource.Subdir = subdir
+			}
 
 		case old.Source.LocalSource != nil:
 			d = *deps.Parse("", old.Source.LocalSource.Directory)

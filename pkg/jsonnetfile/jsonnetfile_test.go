@@ -31,58 +31,60 @@ const notExist = "/this/does/not/exist"
 
 const v0JSON = `{
   "dependencies": [
-    {
-      "name": "grafana-builder",
-      "source": {
-        "git": {
-          "remote": "https://github.com/grafana/jsonnet-libs",
-          "subdir": "grafana-builder"
-        }
-      },
-      "version": "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
-      "sum": "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE="
-    },
-    {
-      "name": "prometheus-mixin",
-      "source": {
-        "git": {
-          "remote": "https://github.com/prometheus/prometheus",
-          "subdir": "documentation/prometheus-mixin"
-        }
-      },
-      "version": "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
-      "sum": "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY="
-    }
+	{
+	  "name": "grafana-builder",
+	  "source": {
+		"git": {
+		  "remote": "https://github.com/grafana/jsonnet-libs",
+		  "subdir": "grafana-builder"
+		}
+	  },
+	  "version": "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
+	  "sum": "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE="
+	},
+	{
+	  "name": "prometheus-mixin",
+	  "source": {
+		"git": {
+		  "remote": "https://github.com/prometheus/prometheus",
+		  "subdir": "documentation/prometheus-mixin"
+		}
+	  },
+	  "version": "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
+	  "sum": "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY="
+	}
   ]
 }`
 
 var v0Jsonnetfile = v1.JsonnetFile{
 	Dependencies: map[string]deps.Dependency{
-		"grafana-builder": {
+		"github.com/grafana/jsonnet-libs/grafana-builder": {
 			Source: deps.Source{
 				GitSource: &deps.Git{
 					Scheme: deps.GitSchemeHTTPS,
 					Host:   "github.com",
 					User:   "grafana",
 					Repo:   "jsonnet-libs",
-					Subdir: "grafana-builder",
+					Subdir: "/grafana-builder",
 				},
 			},
-			Version: "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
-			Sum:     "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
+			Version:          "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
+			Sum:              "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
+			LegacyNameCompat: "grafana-builder",
 		},
-		"prometheus-mixin": {
+		"github.com/prometheus/prometheus/documentation/prometheus-mixin": {
 			Source: deps.Source{
 				GitSource: &deps.Git{
 					Scheme: deps.GitSchemeHTTPS,
 					Host:   "github.com",
 					User:   "prometheus",
 					Repo:   "prometheus",
-					Subdir: "documentation/prometheus-mixin",
+					Subdir: "/documentation/prometheus-mixin",
 				},
 			},
-			Version: "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
-			Sum:     "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY=",
+			Version:          "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
+			Sum:              "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY=",
+			LegacyNameCompat: "prometheus-mixin",
 		},
 	},
 	LegacyImports: true,
@@ -91,27 +93,27 @@ var v0Jsonnetfile = v1.JsonnetFile{
 const v1JSON = `{
   "version": 1,
   "dependencies": [
-    {
-      "source": {
-        "git": {
-          "remote": "https://github.com/grafana/jsonnet-libs",
-          "subdir": "grafana-builder"
-        }
-      },
-      "version": "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
-      "sum": "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE="
-    },
-    {
-      "name": "prometheus",
-      "source": {
-        "git": {
-          "remote": "https://github.com/prometheus/prometheus",
-          "subdir": "documentation/prometheus-mixin"
-        }
-      },
-      "version": "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
-      "sum": "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY="
-    }
+	{
+	  "source": {
+		"git": {
+		  "remote": "https://github.com/grafana/jsonnet-libs",
+		  "subdir": "grafana-builder"
+		}
+	  },
+	  "version": "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
+	  "sum": "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE="
+	},
+	{
+	  "name": "prometheus",
+	  "source": {
+		"git": {
+		  "remote": "https://github.com/prometheus/prometheus",
+		  "subdir": "documentation/prometheus-mixin"
+		}
+	  },
+	  "version": "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
+	  "sum": "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY="
+	}
   ],
   "legacyImports": false
 }`
@@ -208,7 +210,7 @@ func TestLoadEmpty(t *testing.T) {
 
 	// write empty json file
 	tempFile := filepath.Join(tempDir, jsonnetfile.File)
-	err = ioutil.WriteFile(tempFile, []byte(`{"version":1}`), os.ModePerm)
+	err = ioutil.WriteFile(tempFile, []byte(`{}`), os.ModePerm)
 	assert.Nil(t, err)
 
 	// expect it to be loaded properly

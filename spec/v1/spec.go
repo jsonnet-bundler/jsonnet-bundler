@@ -73,6 +73,7 @@ func (jf JsonnetFile) MarshalJSON() ([]byte, error) {
 	var s jsonFile
 
 	s.Version = Version
+	s.LegacyImports = jf.LegacyImports
 
 	for _, d := range jf.Dependencies {
 		s.Dependencies = append(s.Dependencies, d)

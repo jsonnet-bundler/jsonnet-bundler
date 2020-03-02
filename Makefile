@@ -1,5 +1,7 @@
 .PHONY: all check-license crossbuild build install test generate embedmd
 
+SHELL=/bin/bash
+
 GITHUB_URL=github.com/jsonnet-bundler/jsonnet-bundler
 VERSION := $(shell git describe --tags --dirty --always)
 OUT_DIR=_output
@@ -7,7 +9,6 @@ BIN?=jb
 PKGS=$(shell go list ./... | grep -v /vendor/)
 
 all: check-license build generate test
-
 
 # Binaries
 LDFLAGS := '-s -w -extldflags "-static" -X main.Version=${VERSION}'
@@ -42,7 +43,7 @@ test-integration:
 generate: embedmd
 	@echo ">> generating docs"
 	@./scripts/generate-help-txt.sh
-	@$(GOPATH)/bin/embedmd -w `find ./ -path ./vendor -prune -o -name "*.md" -print`
+	$(GOPATH)/bin/embedmd -w `find ./ -path ./vendor -prune -o -name "*.md" -print`
 
 check-license:
 	@echo ">> checking license headers"

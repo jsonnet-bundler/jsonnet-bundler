@@ -21,6 +21,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const (
@@ -29,6 +30,8 @@ const (
 	initActionName    = "init"
 	rewriteActionName = "rewrite"
 )
+
+var Version = "dev"
 
 func main() {
 	os.Exit(Main())
@@ -41,7 +44,7 @@ func Main() int {
 
 	color.Output = color.Error
 
-	a := newApp()
+	a := kingpin.New(filepath.Base(os.Args[0]), "A jsonnet package manager").Version(Version)
 	a.HelpFlag.Short('h')
 
 	a.Flag("jsonnetpkg-home", "The directory used to cache packages in.").

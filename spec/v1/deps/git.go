@@ -106,7 +106,8 @@ const (
 	gitSSHExp = `ssh://git@(?P<host>.+)/(?P<user>.+)/(?P<repo>.+).git`
 	gitSCPExp = `^git@(?P<host>.+):(?P<user>.+)/(?P<repo>.+).git`
 	// The long ugly pattern for ${host} here is a generic pattern for "valid URL with zero or more subdomains and a valid TLD"
-	gitHTTPSExp = `(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
+	gitHTTPSSubgroup = `(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9/]+)/(?P<repo>[-_a-zA-Z0-9]+)\.git`
+	gitHTTPSExp      = `(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
 )
 
 var (
@@ -130,6 +131,9 @@ func parseGit(uri string) *Dependency {
 	case reMatch(gitSCPExp, uri):
 		gs, version = match(uri, gitSCPExp)
 		gs.Scheme = GitSchemeSSH
+	case reMatch(gitHTTPSSubgroup, uri):
+		gs, version = match(uri, gitHTTPSSubgroup)
+		gs.Scheme = GitSchemeHTTPS
 	case reMatch(gitHTTPSExp, uri):
 		gs, version = match(uri, gitHTTPSExp)
 		gs.Scheme = GitSchemeHTTPS

@@ -169,6 +169,40 @@ func TestParseGit(t *testing.T) {
 			},
 			wantRemote: "https://git.example.com/foo/bar",
 		},
+		{
+			name: "ValidGitSubgroups",
+			uri:  "example.com/group/subgroup/repository.git",
+			want: &Dependency{
+				Version: "master",
+				Source: Source{
+					GitSource: &Git{
+						Scheme: GitSchemeHTTPS,
+						Host:   "example.com",
+						User:   "group/subgroup",
+						Repo:   "repository",
+						Subdir: "",
+					},
+				},
+			},
+			wantRemote: "https://example.com/group/subgroup/repository",
+		},
+		{
+			name: "ValidGitSubgroupSubDir",
+			uri:  "example.com/group/subgroup/repository.git/subdir",
+			want: &Dependency{
+				Version: "master",
+				Source: Source{
+					GitSource: &Git{
+						Scheme: GitSchemeHTTPS,
+						Host:   "example.com",
+						User:   "group/subgroup",
+						Repo:   "repository",
+						Subdir: "/subdir",
+					},
+				},
+			},
+			wantRemote: "https://example.com/group/subgroup/repository",
+		},
 	}
 
 	for _, c := range tests {

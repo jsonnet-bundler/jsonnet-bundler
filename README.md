@@ -101,10 +101,10 @@ Commands:
     Initialize a new empty jsonnetfile
 
   install [<uris>...]
-    Install all dependencies or install specific ones
+    Install new dependencies. Existing ones are silently skipped
 
-  update
-    Update all dependencies.
+  update [<uris>...]
+    Update all or specific dependencies.
 
   rewrite
     Automatically rewrite legacy imports to absolute ones

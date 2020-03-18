@@ -184,7 +184,7 @@ func TestParseGit(t *testing.T) {
 					},
 				},
 			},
-			wantRemote: "https://example.com/group/subgroup/repository",
+			wantRemote: "https://example.com/group/subgroup/repository.git",
 		},
 		{
 			name: "ValidGitSubgroupSubDir",
@@ -201,7 +201,7 @@ func TestParseGit(t *testing.T) {
 					},
 				},
 			},
-			wantRemote: "https://example.com/group/subgroup/repository",
+			wantRemote: "https://example.com/group/subgroup/repository.git",
 		},
 	}
 

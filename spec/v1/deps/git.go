@@ -80,12 +80,20 @@ func (gs *Git) UnmarshalJSON(data []byte) error {
 
 // Name returns the repository in a go-like format (example.com/user/repo/subdir)
 func (gs *Git) Name() string {
+	// in case of explicitly specified repositories, remove the `.git` suffix
+	if strings.HasSuffix(gs.Repo, ".git") {
+		gs.Repo = strings.TrimSuffix(gs.Repo, ".git")
+	}
 	return fmt.Sprintf("%s/%s/%s%s", gs.Host, gs.User, gs.Repo, gs.Subdir)
 }
 
 // LegacyName returns the last element of the packages path
 // example: github.com/ksonnet/ksonnet-lib/ksonnet.beta.4 becomes ksonnet.beta.4
 func (gs *Git) LegacyName() string {
+	// in case of explicitly specified repositories, remove the `.git` suffix
+	if strings.HasSuffix(gs.Repo, ".git") {
+		gs.Repo = strings.TrimSuffix(gs.Repo, ".git")
+	}
 	return filepath.Base(gs.Repo + gs.Subdir)
 }
 
@@ -96,6 +104,9 @@ var gitProtoFmts = map[string]string{
 
 // Remote returns a remote string that can be passed to git
 func (gs *Git) Remote() string {
+	if strings.Contains(gs.User, "/") && !strings.HasSuffix(gs.Repo, ".git") {
+		gs.Repo += ".git"
+	}
 	return fmt.Sprintf(gitProtoFmts[gs.Scheme],
 		gs.Host, gs.User, gs.Repo,
 	)

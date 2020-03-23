@@ -99,14 +99,11 @@ func (gs *Git) LegacyName() string {
 
 var gitProtoFmts = map[string]string{
 	GitSchemeSSH:   GitSchemeSSH + "%s/%s/%s.git",
-	GitSchemeHTTPS: GitSchemeHTTPS + "%s/%s/%s",
+	GitSchemeHTTPS: GitSchemeHTTPS + "%s/%s/%s.git",
 }
 
 // Remote returns a remote string that can be passed to git
 func (gs *Git) Remote() string {
-	if strings.Contains(gs.User, "/") && !strings.HasSuffix(gs.Repo, ".git") {
-		gs.Repo += ".git"
-	}
 	return fmt.Sprintf(gitProtoFmts[gs.Scheme],
 		gs.Host, gs.User, gs.Repo,
 	)

@@ -58,7 +58,7 @@ func updateCommand(dir, jsonnetHome string, uris []string) int {
 		locks = make(map[string]deps.Dependency)
 	}
 
-	newLocks, err := pkg.Ensure(jsonnetFile, jsonnetHome, locks)
+	newLocks, err := pkg.Ensure(jsonnetFile, filepath.Join(dir, jsonnetHome), locks)
 	kingpin.FatalIfError(err, "updating")
 
 	kingpin.FatalIfError(

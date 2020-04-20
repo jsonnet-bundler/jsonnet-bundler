@@ -22,6 +22,7 @@ type Dependency struct {
 	Source  Source `json:"source"`
 	Version string `json:"version"`
 	Sum     string `json:"sum,omitempty"`
+	Single  bool   `json:"single,omitempty"`
 
 	// older schema used to have `name`. We still need that data for
 	// `LegacyName`

@@ -100,7 +100,7 @@ Commands:
   init
     Initialize a new empty jsonnetfile
 
-  install [<uris>...]
+  install [<flags>] [<uris>...]
     Install new dependencies. Existing ones are silently skipped
 
   update [<uris>...]

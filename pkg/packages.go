@@ -243,6 +243,11 @@ func ensure(direct map[string]deps.Dependency, vendorDir string, locks map[strin
 	}
 
 	for _, d := range deps {
+		if d.Single {
+			// skip dependencies that explicitely don't want nested ones installed
+			continue
+		}
+
 		f, err := jsonnetfile.Load(filepath.Join(vendorDir, d.Name(), jsonnetfile.File))
 		if err != nil {
 			if os.IsNotExist(err) {

@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
@@ -41,7 +42,7 @@ func (p *LocalPackage) Install(ctx context.Context, name, dir, version string) (
 	}
 
 	oldname := filepath.Join(wd, p.Source.Directory)
-	newname := filepath.Join(wd, filepath.Join(dir, name))
+	newname := filepath.Join(dir, name)
 
 	err = os.RemoveAll(newname)
 	if err != nil {
@@ -57,6 +58,8 @@ func (p *LocalPackage) Install(ctx context.Context, name, dir, version string) (
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create symlink for local dependency: %w")
 	}
+
+	color.Magenta("LOCAL %s -> %s", name, oldname)
 
 	return "", nil
 }

@@ -52,10 +52,12 @@ func Main() int {
 
 	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
 
-	installCmd := a.Command(installActionName, "Install all dependencies or install specific ones")
+	installCmd := a.Command(installActionName, "Install new dependencies. Existing ones are silently skipped")
 	installCmdURIs := installCmd.Arg("uris", "URIs to packages to install, URLs or file paths").Strings()
+	installCmdSingle := installCmd.Flag("single", "install package without dependencies").Short('1').Bool()
 
-	updateCmd := a.Command(updateActionName, "Update all dependencies.")
+	updateCmd := a.Command(updateActionName, "Update all or specific dependencies.")
+	updateCmdURIs := updateCmd.Arg("uris", "URIs to packages to update, URLs or file paths").Strings()
 
 	rewriteCmd := a.Command(rewriteActionName, "Automatically rewrite legacy imports to absolute ones")
 
@@ -77,13 +79,13 @@ func Main() int {
 	case initCmd.FullCommand():
 		return initCommand(workdir)
 	case installCmd.FullCommand():
-		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs)
+		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs, *installCmdSingle)
 	case updateCmd.FullCommand():
-		return updateCommand(workdir, cfg.JsonnetHome)
+		return updateCommand(workdir, cfg.JsonnetHome, *updateCmdURIs)
 	case rewriteCmd.FullCommand():
 		return rewriteCommand(workdir, cfg.JsonnetHome)
 	default:
-		installCommand(workdir, cfg.JsonnetHome, []string{})
+		installCommand(workdir, cfg.JsonnetHome, []string{}, false)
 	}
 
 	return 0

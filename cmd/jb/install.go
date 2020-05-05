@@ -30,7 +30,7 @@ import (
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
-func installCommand(dir, jsonnetHome string, uris []string) int {
+func installCommand(dir, jsonnetHome string, uris []string, single bool) int {
 	if dir == "" {
 		dir = "."
 	}
@@ -59,6 +59,10 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 			kingpin.Fatalf("Unable to parse package URI `%s`", u)
 		}
 
+		if single {
+			d.Single = true
+		}
+
 		if !depEqual(jsonnetFile.Dependencies[d.Name()], *d) {
 			// the dep passed on the cli is different from the jsonnetFile
 			jsonnetFile.Dependencies[d.Name()] = *d
@@ -68,7 +72,7 @@ func installCommand(dir, jsonnetHome string, uris []string) int {
 		}
 	}
 
-	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, lockFile.Dependencies)
+	locked, err := pkg.Ensure(jsonnetFile, filepath.Join(dir, jsonnetHome), lockFile.Dependencies)
 	kingpin.FatalIfError(err, "failed to install packages")
 
 	pkg.CleanLegacyName(jsonnetFile.Dependencies)

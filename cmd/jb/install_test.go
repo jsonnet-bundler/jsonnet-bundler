@@ -49,6 +49,7 @@ func testInstallCommandWithJsonnetHome(t *testing.T, jsonnetHome string) {
 		ExpectedCode            int
 		ExpectedJsonnetFile     []byte
 		ExpectedJsonnetLockFile []byte
+		single                  bool
 	}{
 		{
 			Name:                "NoURLs",
@@ -68,6 +69,14 @@ func testInstallCommandWithJsonnetHome(t *testing.T, jsonnetHome string) {
 			ExpectedCode:            0,
 			ExpectedJsonnetFile:     []byte(`{"version": 1, "dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}], "legacyImports": true}`),
 			ExpectedJsonnetLockFile: []byte(`{"version": 1, "dependencies": [{"source": {"local": {"directory": "jsonnet/foobar"}}, "version": ""}], "legacyImports": false}`),
+		},
+		{
+			Name:                    "single",
+			URIs:                    []string{"github.com/grafana/loki/production/ksonnet/loki@bd4d516262c107a0bde7a962fa2b1e567a2c21e5"},
+			ExpectedCode:            0,
+			ExpectedJsonnetFile:     []byte(`{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/grafana/loki","subdir":"production/ksonnet/loki"}},"version":"bd4d516262c107a0bde7a962fa2b1e567a2c21e5","single":true}],"legacyImports":true}`),
+			ExpectedJsonnetLockFile: []byte(`{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/grafana/loki","subdir":"production/ksonnet/loki"}},"version":"bd4d516262c107a0bde7a962fa2b1e567a2c21e5","sum":"ExovUKXmZ4KwJAv/q8ZwNW9BdIZlrxmoGrne7aR64wo=","single":true}],"legacyImports":false}`),
+			single:                  true,
 		},
 	}
 
@@ -92,7 +101,7 @@ func testInstallCommandWithJsonnetHome(t *testing.T, jsonnetHome string) {
 			jsonnetFileContent(t, jsonnetfile.File, []byte(initContents))
 
 			// install something, check it writes only if required, etc.
-			installCommand("", jsonnetHome, tc.URIs)
+			installCommand("", jsonnetHome, tc.URIs, tc.single)
 			jsonnetFileContent(t, jsonnetfile.File, tc.ExpectedJsonnetFile)
 			if tc.ExpectedJsonnetLockFile != nil {
 				jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)

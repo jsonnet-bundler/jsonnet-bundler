@@ -124,23 +124,30 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 			}
 
 		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err := os.MkdirAll(filepath.Dir(target), os.ModePerm); err != nil {
+				return err
+			}
+
+			err := func() error {
+				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+
+				// copy over contents
+				if _, err := io.Copy(f, tr); err != nil {
+					return err
+				}
+				return nil
+			}()
+
 			if err != nil {
 				return err
 			}
 
-			// copy over contents
-			if _, err := io.Copy(f, tr); err != nil {
-				return err
-			}
-
-			// Explicitly release the file handle inside the inner loop
-			// Using defer would accumulate an unbounded quantity of
-			// handles and release them all at once at function end.
-			f.Close()
-
 		case tar.TypeSymlink:
-			if err := os.MkdirAll(filepath.Dir(target), os.FileMode(header.Mode)); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), os.ModePerm); err != nil {
 				return err
 			}
 
@@ -196,12 +203,13 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		defer os.Remove(archiveFilepath)
 		err = downloadGitHubArchive(archiveFilepath, archiveUrl)
 		if err == nil {
-			r, err := os.Open(archiveFilepath)
-			defer r.Close()
+			var ar *os.File
+			ar, err = os.Open(archiveFilepath)
+			defer ar.Close()
 			if err == nil {
 				// Extract the sub-directory (if any) from the archive
 				// If none specified, the entire archive is unpacked
-				err = gzipUntar(tmpDir, r, p.Source.Subdir)
+				err = gzipUntar(tmpDir, ar, p.Source.Subdir)
 
 				// Move the extracted directory to its final destination
 				if err == nil {
@@ -225,40 +233,33 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		color.Yellow("retrying with git...")
 	}
 
-	cmd := exec.CommandContext(ctx, "git", "init")
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Dir = tmpDir
+	gitCmd := func(args ...string) *exec.Cmd {
+		cmd := exec.CommandContext(ctx, "git", args...)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Dir = tmpDir
+		return cmd
+	}
+
+	cmd := gitCmd("init")
 	err = cmd.Run()
 	if err != nil {
 		return "", err
 	}
 
-	cmd = exec.CommandContext(ctx, "git", "remote", "add", "origin", p.Source.Remote())
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Dir = tmpDir
+	cmd = gitCmd("remote", "add", "origin", p.Source.Remote())
 	err = cmd.Run()
 	if err != nil {
 		return "", err
 	}
 
 	// Attempt shallow fetch at specific revision
-	cmd = exec.CommandContext(ctx, "git", "fetch", "--tags", "--depth", "1", "origin", version)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Dir = tmpDir
+	cmd = gitCmd("fetch", "--tags", "--depth", "1", "origin", version)
 	err = cmd.Run()
 	if err != nil {
 		// Fall back to normal fetch (all revisions)
-		cmd = exec.CommandContext(ctx, "git", "fetch", "origin")
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Dir = tmpDir
+		cmd = gitCmd("fetch", "origin")
 		err = cmd.Run()
 		if err != nil {
 			return "", err
@@ -268,11 +269,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	// Sparse checkout optimization: if a Subdir is specified,
 	// there is no need to do a full checkout
 	if p.Source.Subdir != "" {
-		cmd = exec.CommandContext(ctx, "git", "config", "core.sparsecheckout", "true")
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Dir = tmpDir
+		cmd = gitCmd("config", "core.sparsecheckout", "true")
 		err = cmd.Run()
 		if err != nil {
 			return "", err
@@ -285,11 +282,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		}
 	}
 
-	cmd = exec.CommandContext(ctx, "git", "-c", "advice.detachedHead=false", "checkout", version)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Dir = tmpDir
+	cmd = gitCmd("-c", "advice.detachedHead=false", "checkout", version)
 	err = cmd.Run()
 	if err != nil {
 		return "", err

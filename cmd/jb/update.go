@@ -15,7 +15,6 @@
 package main
 
 import (
-	"net/url"
 	"os"
 	"path/filepath"
 
@@ -27,28 +26,44 @@ import (
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
-func updateCommand(dir, jsonnetHome string, urls ...*url.URL) int {
+func updateCommand(dir, jsonnetHome string, uris []string) int {
 	if dir == "" {
 		dir = "."
 	}
 
+	// load jsonnetfiles
 	jsonnetFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.File))
 	kingpin.FatalIfError(err, "failed to load jsonnetfile")
+
+	lockFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.LockFile))
+	kingpin.FatalIfError(err, "failed to load lockfile")
 
 	kingpin.FatalIfError(
 		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
 		"creating vendor folder")
 
-	// When updating, locks are ignored.
-	locks := map[string]deps.Dependency{}
-	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, locks)
-	kingpin.FatalIfError(err, "failed to install packages")
+	locks := lockFile.Dependencies
+
+	for _, u := range uris {
+		d := deps.Parse(dir, u)
+		if d == nil {
+			kingpin.Fatalf("Unable to parse package URI `%s`", u)
+		}
+
+		delete(locks, d.Name())
+	}
+
+	// no uris: update all
+	if len(uris) == 0 {
+		locks = make(map[string]deps.Dependency)
+	}
+
+	newLocks, err := pkg.Ensure(jsonnetFile, filepath.Join(dir, jsonnetHome), locks)
+	kingpin.FatalIfError(err, "updating")
 
 	kingpin.FatalIfError(
-		writeJSONFile(filepath.Join(dir, jsonnetfile.File), jsonnetFile),
-		"updating jsonnetfile.json")
-	kingpin.FatalIfError(
-		writeJSONFile(filepath.Join(dir, jsonnetfile.LockFile), v1.JsonnetFile{Dependencies: locked}),
+		writeJSONFile(filepath.Join(dir, jsonnetfile.LockFile), v1.JsonnetFile{Dependencies: newLocks}),
 		"updating jsonnetfile.lock.json")
+
 	return 0
 }

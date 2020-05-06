@@ -72,7 +72,8 @@ func installCommand(dir, jsonnetHome string, uris []string, single bool) int {
 		}
 	}
 
-	locked, err := pkg.Ensure(jsonnetFile, filepath.Join(dir, jsonnetHome), lockFile.Dependencies)
+	jsonnetPkgHomeDir := filepath.Join(dir, jsonnetHome)
+	locked, err := pkg.Ensure(jsonnetFile, jsonnetPkgHomeDir, lockFile.Dependencies)
 	kingpin.FatalIfError(err, "failed to install packages")
 
 	pkg.CleanLegacyName(jsonnetFile.Dependencies)

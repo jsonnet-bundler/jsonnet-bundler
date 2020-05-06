@@ -73,7 +73,11 @@ func (s Source) LegacyName() string {
 	case s.GitSource != nil:
 		return s.GitSource.LegacyName()
 	case s.LocalSource != nil:
-		return filepath.Base(s.LocalSource.Directory)
+		p, err := filepath.Abs(s.LocalSource.Directory)
+		if err != nil {
+			panic("unable to create absolute path from local source directory: " + err.Error())
+		}
+		return filepath.Base(p)
 	default:
 		return ""
 	}

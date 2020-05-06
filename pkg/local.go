@@ -43,6 +43,11 @@ func (p *LocalPackage) Install(ctx context.Context, name, dir, version string) (
 
 	oldname := filepath.Join(wd, p.Source.Directory)
 	newname := filepath.Join(dir, name)
+	linkname, err := filepath.Rel(dir, oldname)
+
+	if err != nil {
+		linkname = oldname
+	}
 
 	err = os.RemoveAll(newname)
 	if err != nil {
@@ -54,7 +59,7 @@ func (p *LocalPackage) Install(ctx context.Context, name, dir, version string) (
 		return "", errors.Wrap(err, "symlink destination path does not exist: %w")
 	}
 
-	err = os.Symlink(oldname, newname)
+	err = os.Symlink(linkname, newname)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create symlink for local dependency: %w")
 	}

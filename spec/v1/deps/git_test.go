@@ -53,7 +53,7 @@ func TestParseGit(t *testing.T) {
 					Subdir: "/ksonnet.beta.3",
 				}},
 			},
-			wantRemote: "https://github.com/ksonnet/ksonnet-lib",
+			wantRemote: "https://github.com/ksonnet/ksonnet-lib.git",
 		},
 		{
 			name:       "ssh.ssh",
@@ -82,7 +82,7 @@ func TestParseGit(t *testing.T) {
 					},
 				},
 			},
-			wantRemote: "https://example.com/foo/bar",
+			wantRemote: "https://example.com/foo/bar.git",
 		},
 		{
 			name: "ValidGitNoScheme",
@@ -99,7 +99,7 @@ func TestParseGit(t *testing.T) {
 					},
 				},
 			},
-			wantRemote: "https://example.com/foo/bar",
+			wantRemote: "https://example.com/foo/bar.git",
 		},
 		{
 			name: "ValidGitPath",
@@ -116,7 +116,7 @@ func TestParseGit(t *testing.T) {
 					},
 				},
 			},
-			wantRemote: "https://example.com/foo/bar",
+			wantRemote: "https://example.com/foo/bar.git",
 		},
 		{
 			name: "ValidGitVersion",
@@ -133,7 +133,7 @@ func TestParseGit(t *testing.T) {
 					},
 				},
 			},
-			wantRemote: "https://example.com/foo/bar",
+			wantRemote: "https://example.com/foo/bar.git",
 		},
 		{
 			name: "ValidGitPathVersion",
@@ -150,7 +150,7 @@ func TestParseGit(t *testing.T) {
 					},
 				},
 			},
-			wantRemote: "https://example.com/foo/bar",
+			wantRemote: "https://example.com/foo/bar.git",
 		},
 		{
 			name: "ValidGitSubdomain",
@@ -167,7 +167,7 @@ func TestParseGit(t *testing.T) {
 					},
 				},
 			},
-			wantRemote: "https://git.example.com/foo/bar",
+			wantRemote: "https://git.example.com/foo/bar.git",
 		},
 		{
 			name: "ValidGitSubgroups",
@@ -184,7 +184,7 @@ func TestParseGit(t *testing.T) {
 					},
 				},
 			},
-			wantRemote: "https://example.com/group/subgroup/repository",
+			wantRemote: "https://example.com/group/subgroup/repository.git",
 		},
 		{
 			name: "ValidGitSubgroupSubDir",
@@ -201,7 +201,7 @@ func TestParseGit(t *testing.T) {
 					},
 				},
 			},
-			wantRemote: "https://example.com/group/subgroup/repository",
+			wantRemote: "https://example.com/group/subgroup/repository.git",
 		},
 	}
 

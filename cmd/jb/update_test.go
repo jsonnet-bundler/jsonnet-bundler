@@ -102,24 +102,24 @@ func TestUpdate(t *testing.T) {
 			name: "simple",
 			uris: []string{}, // no uris
 			before: &RepoState{
-				File: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib","subdir":""}},"version":"master"}],"legacyImports":true}`,
-				Lock: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib","subdir":""}},"version":"9f40207f668e382b706e1822f2d46ce2cd0a57cc","sum":"qUJDskVRtmkTms2udvFpLi1t5YKVbGmMSyiZnPjXsMo="}],"legacyImports":false}`,
+				File: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib.git","subdir":""}},"version":"master"}],"legacyImports":true}`,
+				Lock: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib.git","subdir":""}},"version":"9f40207f668e382b706e1822f2d46ce2cd0a57cc","sum":"qUJDskVRtmkTms2udvFpLi1t5YKVbGmMSyiZnPjXsMo="}],"legacyImports":false}`,
 			},
 			after: &RepoState{
-				File: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib","subdir":""}},"version":"master"}],"legacyImports":true}`,
-				Lock: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib","subdir":""}},"version":"ed7c1aff9e10d3b42fb130446d495f1c769ecd7b","sum":"OraOcUvDIx9Eikaihi8XsRNRsVehO75Ek35im/jYoSA="}],"legacyImports":false}`,
+				File: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib.git","subdir":""}},"version":"master"}],"legacyImports":true}`,
+				Lock: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib.git","subdir":""}},"version":"ed7c1aff9e10d3b42fb130446d495f1c769ecd7b","sum":"OraOcUvDIx9Eikaihi8XsRNRsVehO75Ek35im/jYoSA="}],"legacyImports":false}`,
 			},
 		},
 		{
 			name: "single",
 			uris: []string{"github.com/jsonnet-bundler/frozen-lib"},
 			before: &RepoState{
-				File: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/grafana/jsonnet-libs","subdir":"ksonnet-util"}},"version":"master"},{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib","subdir":""}},"version":"master"}],"legacyImports":true}`,
-				Lock: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/grafana/jsonnet-libs","subdir":"ksonnet-util"}},"version":"610b00d219d0a6f3d833dd44e4bb0deda2429da0","sum":"XdIrw3m7I8fJ3CL9eR8LtuYcanf2QK78n4H4OBBOADc="},{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib","subdir":""}},"version":"9f40207f668e382b706e1822f2d46ce2cd0a57cc","sum":"qUJDskVRtmkTms2udvFpLi1t5YKVbGmMSyiZnPjXsMo="}],"legacyImports":false}`,
+				File: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/grafana/jsonnet-libs.git","subdir":"ksonnet-util"}},"version":"master"},{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib.git","subdir":""}},"version":"master"}],"legacyImports":true}`,
+				Lock: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/grafana/jsonnet-libs.git","subdir":"ksonnet-util"}},"version":"610b00d219d0a6f3d833dd44e4bb0deda2429da0","sum":"XdIrw3m7I8fJ3CL9eR8LtuYcanf2QK78n4H4OBBOADc="},{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib.git","subdir":""}},"version":"9f40207f668e382b706e1822f2d46ce2cd0a57cc","sum":"qUJDskVRtmkTms2udvFpLi1t5YKVbGmMSyiZnPjXsMo="}],"legacyImports":false}`,
 			},
 			after: &RepoState{
-				File: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/grafana/jsonnet-libs","subdir":"ksonnet-util"}},"version":"master"},{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib","subdir":""}},"version":"master"}],"legacyImports":true}`,
-				Lock: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/grafana/jsonnet-libs","subdir":"ksonnet-util"}},"version":"610b00d219d0a6f3d833dd44e4bb0deda2429da0","sum":"XdIrw3m7I8fJ3CL9eR8LtuYcanf2QK78n4H4OBBOADc="},{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib","subdir":""}},"version":"ed7c1aff9e10d3b42fb130446d495f1c769ecd7b","sum":"OraOcUvDIx9Eikaihi8XsRNRsVehO75Ek35im/jYoSA="}],"legacyImports":false}`,
+				File: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/grafana/jsonnet-libs.git","subdir":"ksonnet-util"}},"version":"master"},{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib.git","subdir":""}},"version":"master"}],"legacyImports":true}`,
+				Lock: `{"version":1,"dependencies":[{"source":{"git":{"remote":"https://github.com/grafana/jsonnet-libs.git","subdir":"ksonnet-util"}},"version":"610b00d219d0a6f3d833dd44e4bb0deda2429da0","sum":"XdIrw3m7I8fJ3CL9eR8LtuYcanf2QK78n4H4OBBOADc="},{"source":{"git":{"remote":"https://github.com/jsonnet-bundler/frozen-lib.git","subdir":""}},"version":"ed7c1aff9e10d3b42fb130446d495f1c769ecd7b","sum":"OraOcUvDIx9Eikaihi8XsRNRsVehO75Ek35im/jYoSA="}],"legacyImports":false}`,
 			},
 		},
 	}

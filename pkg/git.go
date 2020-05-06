@@ -183,7 +183,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	defer os.RemoveAll(tmpDir)
 
 	// Optimization for GitHub sources: download a tarball archive of the requested
-	// version instead of cloning the entire repository.
+	// version instead of cloning the entire
 	isGitHubRemote, err := regexp.MatchString(`^(https|ssh)://github\.com/.+$`, p.Source.Remote())
 	if isGitHubRemote {
 		// Let git ls-remote decide if "version" is a ref or a commit SHA in the unlikely
@@ -197,7 +197,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 			commitSha = version
 		}
 
-		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", p.Source.Remote(), commitSha)
+		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", strings.TrimSuffix(p.Source.Remote(), ".git"), commitSha)
 		archiveFilepath := fmt.Sprintf("%s.tar.gz", tmpDir)
 
 		defer os.Remove(archiveFilepath)

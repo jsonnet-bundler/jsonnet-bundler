@@ -1,6 +1,19 @@
 # Changelog
 
-## 0.3.0 / 2020-02-08
+## 0.4.0 / 2020-05-15
+
+You can now `jb update` a single dependency.  
+Run `jb update github.com/org/repo` (supports multiple at ones).
+
+#### Changes:
+
+- **[FEATURE]** Update single dependencies (#92)
+- **[FEATURE]** Skip dependencies (#99)
+- **[ENHANCEMENT]** Add support for subgroups (#91) (#93)
+- **[BUGFIX]** Fix local package with relative path (#100) (#103) (#104)
+- **[BUGFIX]** Fix unarchiver (#86)
+
+## 0.3.1 / 2020-03-01
 
 #### BREAKING:
 

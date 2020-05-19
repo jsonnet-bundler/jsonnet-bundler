@@ -85,6 +85,23 @@ func TestParseGit(t *testing.T) {
 			wantRemote: "https://example.com/foo/bar.git",
 		},
 		{
+			name: "ValidGitLabUserGroupHTTPS",
+			uri:  "https://gitlab.example.com/first.last/project",
+			want: &Dependency{
+				Version: "master",
+				Source: Source{
+					GitSource: &Git{
+						Scheme: GitSchemeHTTPS,
+						Host:   "gitlab.example.com",
+						User:   "first.last",
+						Repo:   "project",
+						Subdir: "",
+					},
+				},
+			},
+			wantRemote: "https://gitlab.example.com/first.last/project.git",
+		},
+		{
 			name: "ValidGitNoScheme",
 			uri:  "example.com/foo/bar",
 			want: &Dependency{

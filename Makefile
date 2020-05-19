@@ -16,7 +16,7 @@ cross: clean
 	CGO_ENABLED=0 gox \
 	  -output="$(OUT_DIR)/jb-{{.OS}}-{{.Arch}}" \
 	  -ldflags=$(LDFLAGS) \
-	  -arch="amd64 arm64 arm" -os="linux" \
+	  -arch="amd64 arm64 arm" -os="linux windows" \
 	  -osarch="darwin/amd64" \
 	  ./cmd/$(BIN)
 

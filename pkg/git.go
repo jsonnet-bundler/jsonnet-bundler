@@ -19,6 +19,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -176,7 +178,8 @@ func remoteResolveRef(ctx context.Context, remote string, ref string) (string, e
 func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (string, error) {
 	destPath := path.Join(dir, name)
 
-	tmpDir, err := ioutil.TempDir(filepath.Join(dir, ".tmp"), fmt.Sprintf("jsonnetpkg-%s-%s", strings.Replace(name, "/", "-", -1), version))
+	pkgh := sha256.Sum256([]byte(fmt.Sprintf("jsonnetpkg-%s-%s", strings.Replace(name, "/", "-", -1), version)))
+	tmpDir, err := ioutil.TempDir(filepath.Join(dir, ".tmp"), hex.EncodeToString(pkgh[:]))
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create tmp dir")
 	}

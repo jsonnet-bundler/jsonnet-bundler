@@ -153,6 +153,40 @@ func TestParseGit(t *testing.T) {
 			wantRemote: "https://example.com/foo/bar.git",
 		},
 		{
+			name: "ValidGitCredentials",
+			uri:  "user:password@example.com/foo/bar",
+			want: &Dependency{
+				Version: "master",
+				Source: Source{
+					GitSource: &Git{
+						Scheme:      GitSchemeHTTPS,
+						Host:        "example.com",
+						User:        "foo",
+						Repo:        "bar",
+						Credentials: "user:password",
+					},
+				},
+			},
+			wantRemote: "https://user:password@example.com/foo/bar.git",
+		},
+		{
+			name: "ValidGitCredentialsVersion",
+			uri:  "user:password@example.com/foo/bar@baz",
+			want: &Dependency{
+				Version: "baz",
+				Source: Source{
+					GitSource: &Git{
+						Scheme:      GitSchemeHTTPS,
+						Host:        "example.com",
+						User:        "foo",
+						Repo:        "bar",
+						Credentials: "user:password",
+					},
+				},
+			},
+			wantRemote: "https://user:password@example.com/foo/bar.git",
+		},
+		{
 			name: "ValidGitSubdomain",
 			uri:  "git.example.com/foo/bar",
 			want: &Dependency{

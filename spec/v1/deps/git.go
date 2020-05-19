@@ -39,6 +39,8 @@ type Git struct {
 	Repo string
 	// Subdir (example.com/<user>/<repo>/<subdir>)
 	Subdir string
+	// Credentials (<credentials>@example.com/<user>/<repo>)
+	Credentials string
 }
 
 // json representation of Git (for compatiblity with old format)
@@ -75,6 +77,7 @@ func (gs *Git) UnmarshalJSON(data []byte) error {
 	gs.User = tmp.Source.GitSource.User
 	gs.Repo = tmp.Source.GitSource.Repo
 	gs.Scheme = tmp.Source.GitSource.Scheme
+	gs.Credentials = tmp.Source.GitSource.Credentials
 	return nil
 }
 
@@ -96,8 +99,12 @@ var gitProtoFmts = map[string]string{
 
 // Remote returns a remote string that can be passed to git
 func (gs *Git) Remote() string {
+	host := gs.Host
+	if gs.Credentials != "" {
+		host = gs.Credentials + "@" + gs.Host
+	}
 	return fmt.Sprintf(gitProtoFmts[gs.Scheme],
-		gs.Host, gs.User, gs.Repo,
+		host, gs.User, gs.Repo,
 	)
 }
 
@@ -106,8 +113,8 @@ const (
 	gitSSHExp = `ssh://git@(?P<host>.+)/(?P<user>.+)/(?P<repo>.+).git`
 	gitSCPExp = `^git@(?P<host>.+):(?P<user>.+)/(?P<repo>.+).git`
 	// The long ugly pattern for ${host} here is a generic pattern for "valid URL with zero or more subdomains and a valid TLD"
-	gitHTTPSSubgroup = `(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9/]+)/(?P<repo>[-_a-zA-Z0-9]+)\.git`
-	gitHTTPSExp      = `(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
+	gitHTTPSSubgroup = `(https?://)?((?P<credentials>.*)@)?(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9/]+)/(?P<repo>[-_a-zA-Z0-9]+)\.git`
+	gitHTTPSExp      = `(https?://)?((?P<credentials>.*)@)?(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9]+)/(?P<repo>[-_a-zA-Z0-9]+)`
 )
 
 var (
@@ -170,6 +177,7 @@ func match(p string, exp string) (gs *Git, version string) {
 		gs.Host = matches["host"]
 		gs.User = matches["user"]
 		gs.Repo = matches["repo"]
+		gs.Credentials = matches["credentials"]
 
 		if sd, ok := matches["subdir"]; ok {
 			gs.Subdir = sd

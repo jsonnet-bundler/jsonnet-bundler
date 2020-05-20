@@ -200,6 +200,7 @@ func checkLegacyNameTaken(legacyName string, pkgName string) (bool, error) {
 }
 
 func known(deps map[string]deps.Dependency, p string) bool {
+	p = filepath.ToSlash(p)
 	for _, d := range deps {
 		k := d.Name()
 		if strings.HasPrefix(p, k) || strings.HasPrefix(k, p) {

@@ -18,6 +18,7 @@ cross: clean
 	  -ldflags=$(LDFLAGS) \
 	  -arch="amd64 arm64 arm" -os="linux" \
 	  -osarch="darwin/amd64" \
+	  -osarch="windows/amd64" \
 	  ./cmd/$(BIN)
 
 static:

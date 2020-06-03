@@ -30,7 +30,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/fatih/color"
@@ -38,8 +37,6 @@ import (
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
-
-const GOOS string = runtime.GOOS
 
 type GitPackage struct {
 	Source *deps.Git
@@ -216,14 +213,14 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 			if err == nil {
 				// Extract the sub-directory (if any) from the archive
 				// If none specified, the entire archive is unpacked
-				err = gzipUntar(tmpDir, ar, Subdir(p.Source.Subdir))
+				err = gzipUntar(tmpDir, ar, p.Source.Subdir)
 
 				// Move the extracted directory to its final destination
 				if err == nil {
 					if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
 						panic(err)
 					}
-					if err := os.Rename(path.Join(tmpDir, Subdir(p.Source.Subdir)), destPath); err != nil {
+					if err := os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath); err != nil {
 						panic(err)
 					}
 				}
@@ -321,20 +318,10 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		return "", errors.Wrap(err, "failed to clean previous destination path")
 	}
 
-	err = os.Rename(path.Join(tmpDir, Subdir(p.Source.Subdir)), destPath)
+	err = os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to move package")
 	}
 
 	return commitHash, nil
-}
-
-func Subdir (subdir string) string {
-    if GOOS == "windows" {
-        var re = regexp.MustCompile(`\\`)
-        var substitution = "/"
-        return re.ReplaceAllString(subdir, substitution)
-    } else {
-        return subdir
-    }
 }

@@ -22,8 +22,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/fatih/color"
@@ -33,8 +31,6 @@ import (
 	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
-
-const GOOS string = runtime.GOOS
 
 var (
 	VersionMismatch = errors.New("multiple colliding versions specified")
@@ -204,24 +200,14 @@ func checkLegacyNameTaken(legacyName string, pkgName string) (bool, error) {
 }
 
 func known(deps map[string]deps.Dependency, p string) bool {
-	p = Subdir(filepath.ToSlash(p))
+	p = filepath.ToSlash(p)
 	for _, d := range deps {
-		k := Subdir(d.Name())
+		k := filepath.ToSlash(d.Name())
 		if strings.HasPrefix(p, k) || strings.HasPrefix(k, p) {
 			return true
 		}
 	}
 	return false
-}
-
-func Subdir (subdir string) string {
-    if GOOS == "windows" {
-        var re = regexp.MustCompile(`(?m)/`)
-        var substitution = "\\"
-        return re.ReplaceAllString(subdir, substitution)
-    } else {
-        return subdir
-    }
 }
 
 func ensure(direct map[string]deps.Dependency, vendorDir string, locks map[string]deps.Dependency) (map[string]deps.Dependency, error) {

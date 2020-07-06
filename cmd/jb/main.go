@@ -22,6 +22,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"gopkg.in/alecthomas/kingpin.v2"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 )
 
 const (
@@ -49,6 +51,8 @@ func Main() int {
 
 	a.Flag("jsonnetpkg-home", "The directory used to cache packages in.").
 		Default("vendor").StringVar(&cfg.JsonnetHome)
+	a.Flag("quiet", "Suppress any output from git command.").
+		Short('q').BoolVar(&pkg.GitQuiet)
 
 	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
 

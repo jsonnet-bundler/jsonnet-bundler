@@ -92,6 +92,7 @@ Flags:
       --version  Show application version.
       --jsonnetpkg-home="vendor"  
                  The directory used to cache packages in.
+  -q, --quiet    Suppress any output from git command.
 
 Commands:
   help [<command>...]

@@ -48,13 +48,17 @@ func NewGitPackage(source *deps.Git) Interface {
 	}
 }
 
+var GitQuiet = false
+
 func downloadGitHubArchive(filepath string, url string) error {
 	// Get the data
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
-	color.Cyan("GET %s %d", url, resp.StatusCode)
+	if !GitQuiet {
+		color.Cyan("GET %s %d", url, resp.StatusCode)
+	}
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
 	}
@@ -240,8 +244,13 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	gitCmd := func(args ...string) *exec.Cmd {
 		cmd := exec.CommandContext(ctx, "git", args...)
 		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		if GitQuiet {
+			cmd.Stdout = nil
+			cmd.Stderr = nil
+		} else {
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+		}
 		cmd.Dir = tmpDir
 		return cmd
 	}

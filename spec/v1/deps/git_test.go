@@ -221,21 +221,21 @@ func TestParseGit(t *testing.T) {
 			wantRemote: "https://example.com/group/subgroup/repository.git",
 		},
 		{
-			name: "ValidGitSubgroupWithSpace",
-			uri:  "example.com/group/sub group/repository.git/subdir",
+			name: "ValidGitAzureDevops",
+			uri:  "https://organization@dev.azure.com/organization/project/_git/repository",
 			want: &Dependency{
 				Version: "master",
 				Source: Source{
 					GitSource: &Git{
-						Scheme: GitSchemeHTTPS,
-						Host:   "example.com",
-						User:   "group/sub group",
+						Scheme: GitSchemeHTTPSAzureDevops,
+						Host:   "dev.azure.com",
+						User:   "organization/project/_git",
 						Repo:   "repository",
-						Subdir: "/subdir",
+						Subdir: "",
 					},
 				},
 			},
-			wantRemote: "https://example.com/group/sub group/repository.git",
+			wantRemote: "https://dev.azure.com/organization/project/_git/repository",
 		},
 	}
 

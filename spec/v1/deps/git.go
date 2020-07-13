@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	GitSchemeSSH   = "ssh://git@"
-	GitSchemeHTTPS = "https://"
+	GitSchemeSSH              = "ssh://git@"
+	GitSchemeHTTPS            = "https://"
+	GitSchemeHTTPSAzureDevops = "https://dev.azure.com"
 )
 
 // Git holds all required information for cloning a package from git
@@ -90,8 +91,9 @@ func (gs *Git) LegacyName() string {
 }
 
 var gitProtoFmts = map[string]string{
-	GitSchemeSSH:   GitSchemeSSH + "%s/%s/%s.git",
-	GitSchemeHTTPS: GitSchemeHTTPS + "%s/%s/%s.git",
+	GitSchemeSSH:              GitSchemeSSH + "%s/%s/%s.git",
+	GitSchemeHTTPS:            GitSchemeHTTPS + "%s/%s/%s.git",
+	GitSchemeHTTPSAzureDevops: GitSchemeHTTPS + "%s/%s/%s",
 }
 
 // Remote returns a remote string that can be passed to git
@@ -108,6 +110,8 @@ const (
 	// The long ugly pattern for ${host} here is a generic pattern for "valid URL with zero or more subdomains and a valid TLD"
 	gitHTTPSSubgroup = `(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9/\.\s]+)/(?P<repo>[-_a-zA-Z0-9\.]+)\.git`
 	gitHTTPSExp      = `(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9\.]+)/(?P<repo>[-_a-zA-Z0-9\.]+)`
+
+	gitAzureDevopsHTTPSExp = `(?P<host>[a-zA-Z0-9][a-zA-Z0-9-\.]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/(?P<user>[-_a-zA-Z0-9/\-\.\s]+/_git)/(?P<repo>[-_a-zA-Z0-9\.]+)`
 )
 
 var (
@@ -131,6 +135,9 @@ func parseGit(uri string) *Dependency {
 	case reMatch(gitSCPExp, uri):
 		gs, version = match(uri, gitSCPExp)
 		gs.Scheme = GitSchemeSSH
+	case reMatch(gitAzureDevopsHTTPSExp, uri):
+		gs, version = match(uri, gitAzureDevopsHTTPSExp)
+		gs.Scheme = GitSchemeHTTPSAzureDevops
 	case reMatch(gitHTTPSSubgroup, uri):
 		gs, version = match(uri, gitHTTPSSubgroup)
 		gs.Scheme = GitSchemeHTTPS

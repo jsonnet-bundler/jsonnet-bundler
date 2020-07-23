@@ -1,5 +1,5 @@
-FROM busybox:1.28
+FROM alpine:3.12
 
-COPY _output/linux/amd64/jb /
+COPY jb /
 
 ENTRYPOINT ["/jb"]

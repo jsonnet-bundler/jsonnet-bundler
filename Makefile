@@ -13,13 +13,7 @@ all: check-license build generate test
 # Binaries
 LDFLAGS := '-s -w -extldflags "-static" -X main.Version=${VERSION}'
 cross: clean
-	CGO_ENABLED=0 gox \
-	  -output="$(OUT_DIR)/jb-{{.OS}}-{{.Arch}}" \
-	  -ldflags=$(LDFLAGS) \
-	  -arch="amd64 arm64 arm" -os="linux" \
-	  -osarch="darwin/amd64" \
-	  -osarch="windows/amd64" \
-	  ./cmd/$(BIN)
+	goreleaser --rm-dist --skip-publish --snapshot
 
 static:
 	CGO_ENABLED=0 go build -ldflags=${LDFLAGS} -o $(OUT_DIR)/$(BIN) ./cmd/$(BIN)

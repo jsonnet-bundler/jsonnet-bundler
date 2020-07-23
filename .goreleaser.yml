@@ -28,17 +28,6 @@ builds:
       - -s -w -extldflags "-static" -X main.Version={{.Version}}
     main: ./cmd/jb
 dist: _output
-dockers:
-  - builds:
-      - jb
-    goarch: amd64
-    goos: linux
-    image_templates:
-      - jsonnet/bundler:latest
-      - jsonnet/bundler:v{{ .Major }}
-      - jsonnet/bundler:v{{ .Major }}.{{ .Minor }}
-      - jsonnet/bundler:{{ .Tag }}
-    skip_push: false
 project_name: jb
 release:
   draft: true

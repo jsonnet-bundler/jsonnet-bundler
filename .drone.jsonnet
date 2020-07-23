@@ -45,6 +45,7 @@
       auto_tag: true,
       password: { from_secret: 'docker_password' },
       repo: 'jsonnet/bundler',
+      target: 'production',
       username: { from_secret: 'docker_username' },
     },
     when: { event: 'tag' },

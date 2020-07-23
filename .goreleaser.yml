@@ -27,6 +27,8 @@ builds:
     ldflags:
       - -s -w -extldflags "-static" -X main.Version={{.Version}}
     main: ./cmd/jb
+changelog:
+  skip: true
 dist: _output
 project_name: jb
 release:

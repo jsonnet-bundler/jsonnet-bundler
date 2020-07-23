@@ -30,6 +30,26 @@
     ],
   },
 
+  local goreleaser(version) = golang(version) {
+    commands: ['curl -sL https://git.io/goreleaser | bash'],
+    environment+: { GITHUB_TOKEN: { from_secret: 'github_token' } },
+    name: 'goreleaser',
+    when: { event: 'tag' },
+  },
+
+  local docker_release() = {
+    image: 'plugins/docker',
+    pull: 'always',
+    name: 'docker',
+    settings: {
+      auto_tag: true,
+      password: { from_secret: 'docker_password' },
+      repo: 'jsonnet/bundler',
+      username: { from_secret: 'docker_username' },
+    },
+    when: { event: 'tag' },
+  },
+
   steps: [
     golang() {
       name: 'gomod',
@@ -42,7 +62,7 @@
     build('1.11'),
     build('1.12'),
     build('1.13'),
-    build('1.14-rc'),
+    build('1.14'),
 
     golang() {
       name: 'generate',
@@ -52,5 +72,9 @@
         'git diff --exit-code',
       ],
     },
+
+    goreleaser('1.14'),
+
+    docker_release(),
   ],
 }

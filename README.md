@@ -15,6 +15,11 @@ GO111MODULE="on" go get github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
 This will put `jb` in `$(go env GOPATH)/bin`. If you encounter the error
 `jb: command not found` after installation then you may need to add that directory to your `$PATH` as shown [in their docs](https://golang.org/doc/code.html#GOPATH).
 
+## Package Install
+
+* [Arch Linux AUR](https://aur.archlinux.org/packages/jsonnet-bundler-bin)
+* Mac OS X via Homebrew: `brew install jsonnet-bundler`
+
 ## Features
 
 - Fetches transitive dependencies

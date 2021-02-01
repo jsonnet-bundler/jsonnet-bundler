@@ -19,6 +19,7 @@ This will put `jb` in `$(go env GOPATH)/bin`. If you encounter the error
 
 * [Arch Linux AUR](https://aur.archlinux.org/packages/jsonnet-bundler-bin)
 * Mac OS X via Homebrew: `brew install jsonnet-bundler`
+* Fedora (>= 32): `sudo dnf install golang-github-jsonnet-bundler`
 
 ## Features
 

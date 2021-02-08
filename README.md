@@ -73,7 +73,7 @@ To depend on a package that is in a subtree of a Github repo (this package also
 happens to bring in a transitive dependency):
 
 ```sh
-jb install https://github.com/coreos/prometheus-operator/jsonnet/prometheus-operator
+jb install https://github.com/prometheus-operator/prometheus-operator/jsonnet/prometheus-operator
 ```
 
 *Note that if you are copy pasting from the Github website's address bar,

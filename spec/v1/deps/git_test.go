@@ -220,6 +220,23 @@ func TestParseGit(t *testing.T) {
 			},
 			wantRemote: "https://example.com/group/subgroup/repository.git",
 		},
+		{
+			name: "ValidGitAzureDevops",
+			uri:  "https://organization@dev.azure.com/organization/project/_git/repository",
+			want: &Dependency{
+				Version: "master",
+				Source: Source{
+					GitSource: &Git{
+						Scheme: GitSchemeHTTPSAzureDevops,
+						Host:   "dev.azure.com",
+						User:   "organization/project/_git",
+						Repo:   "repository",
+						Subdir: "",
+					},
+				},
+			},
+			wantRemote: "https://dev.azure.com/organization/project/_git/repository",
+		},
 	}
 
 	for _, c := range tests {

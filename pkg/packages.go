@@ -52,7 +52,7 @@ var (
 func Ensure(direct v1.JsonnetFile, vendorDir string, oldLocks map[string]deps.Dependency) (map[string]deps.Dependency, error) {
 	// ensure all required files are in vendor
 	// This is the actual installation
-	locks, err := ensure(direct.Dependencies, vendorDir, oldLocks)
+	locks, err := ensure(direct.Dependencies, vendorDir, "", oldLocks)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func known(deps map[string]deps.Dependency, p string) bool {
 	return false
 }
 
-func ensure(direct map[string]deps.Dependency, vendorDir string, locks map[string]deps.Dependency) (map[string]deps.Dependency, error) {
+func ensure(direct map[string]deps.Dependency, vendorDir, pathToParentModule string, locks map[string]deps.Dependency) (map[string]deps.Dependency, error) {
 	deps := make(map[string]deps.Dependency)
 
 	for _, d := range direct {
@@ -231,7 +231,7 @@ func ensure(direct map[string]deps.Dependency, vendorDir string, locks map[strin
 		dir := filepath.Join(vendorDir, d.Name())
 		os.RemoveAll(dir)
 
-		locked, err := download(d, vendorDir)
+		locked, err := download(d, vendorDir, pathToParentModule)
 		if err != nil {
 			return nil, errors.Wrap(err, "downloading")
 		}
@@ -257,7 +257,12 @@ func ensure(direct map[string]deps.Dependency, vendorDir string, locks map[strin
 			return nil, err
 		}
 
-		nested, err := ensure(f.Dependencies, vendorDir, locks)
+		absolutePath, err := filepath.EvalSymlinks(filepath.Join(vendorDir, d.Name()))
+		if err != nil {
+			return nil, err
+		}
+
+		nested, err := ensure(f.Dependencies, vendorDir, absolutePath, locks)
 		if err != nil {
 			return nil, err
 		}
@@ -274,13 +279,27 @@ func ensure(direct map[string]deps.Dependency, vendorDir string, locks map[strin
 
 // download retrieves a package from a remote upstream. The checksum of the
 // files is generated afterwards.
-func download(d deps.Dependency, vendorDir string) (*deps.Dependency, error) {
+func download(d deps.Dependency, vendorDir, pathToParentModule string) (*deps.Dependency, error) {
 	var p Interface
 	switch {
 	case d.Source.GitSource != nil:
 		p = NewGitPackage(d.Source.GitSource)
 	case d.Source.LocalSource != nil:
-		p = NewLocalPackage(d.Source.LocalSource)
+		wd, err := os.Getwd()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get current working directory: %w", err)
+		}
+
+		// Resolve the relative path to the parent module. When a local
+		// dependency tree is resolved recursively, nested local dependencies
+		// with relative paths must be evaluated relative to their referencing
+		// jsonnetfile, rather than relative to the top-level jsonnetfile.
+		modulePath, err := filepath.Rel(wd, filepath.Join(pathToParentModule, d.Source.LocalSource.Directory))
+		if err != nil {
+			modulePath = d.Source.LocalSource.Directory
+		}
+
+		p = NewLocalPackage(&deps.Local{Directory: modulePath})
 	}
 
 	if p == nil {

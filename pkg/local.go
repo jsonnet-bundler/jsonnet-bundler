@@ -38,7 +38,7 @@ func NewLocalPackage(source *deps.Local) Interface {
 func (p *LocalPackage) Install(ctx context.Context, name, dir, version string) (lockVersion string, err error) {
 	wd, err := os.Getwd()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get current working directory: %w")
+		return "", errors.Wrap(err, "failed to get current working directory")
 	}
 
 	oldname := filepath.Join(wd, p.Source.Directory)
@@ -51,17 +51,17 @@ func (p *LocalPackage) Install(ctx context.Context, name, dir, version string) (
 
 	err = os.RemoveAll(newname)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to clean previous destination path: %w")
+		return "", errors.Wrap(err, "failed to clean previous destination path")
 	}
 
 	_, err = os.Stat(oldname)
 	if os.IsNotExist(err) {
-		return "", errors.Wrap(err, "symlink destination path does not exist: %w")
+		return "", errors.Wrap(err, "symlink destination path does not exist")
 	}
 
 	err = os.Symlink(linkname, newname)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create symlink for local dependency: %w")
+		return "", errors.Wrap(err, "failed to create symlink for local dependency")
 	}
 
 	color.Magenta("LOCAL %s -> %s", name, oldname)

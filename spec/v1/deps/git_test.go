@@ -220,6 +220,23 @@ func TestParseGit(t *testing.T) {
 			},
 			wantRemote: "https://example.com/group/subgroup/repository.git",
 		},
+		{
+			name: "ValidBitbucketPersonalRepository",
+			uri:  "bitbucket.org/~user/repository.git",
+			want: &Dependency{
+				Version: "master",
+				Source: Source{
+					GitSource: &Git{
+						Scheme: GitSchemeHTTPS,
+						Host:   "bitbucket.org",
+						User:   "~user",
+						Repo:   "repository",
+						Subdir: "",
+					},
+				},
+			},
+			wantRemote: "https://bitbucket.org/~user/repository.git",
+		},
 	}
 
 	for _, c := range tests {

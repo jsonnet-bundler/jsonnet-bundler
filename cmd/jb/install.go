@@ -17,6 +17,7 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -30,7 +31,7 @@ import (
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
-func installCommand(dir, jsonnetHome string, uris []string, single bool) int {
+func installCommand(dir, jsonnetHome string, uris []string, single bool, legacyName string) int {
 	if dir == "" {
 		dir = "."
 	}
@@ -53,6 +54,10 @@ func installCommand(dir, jsonnetHome string, uris []string, single bool) int {
 		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
 		"creating vendor folder")
 
+	if len(uris) > 1 && legacyName != "" {
+		log.Fatal("Cannot use --legacy-name with mutliple uris")
+	}
+
 	for _, u := range uris {
 		d := deps.Parse(dir, u)
 		if d == nil {
@@ -61,6 +66,10 @@ func installCommand(dir, jsonnetHome string, uris []string, single bool) int {
 
 		if single {
 			d.Single = true
+		}
+
+		if legacyName != "" {
+			d.LegacyNameCompat = legacyName
 		}
 
 		if !depEqual(jsonnetFile.Dependencies[d.Name()], *d) {

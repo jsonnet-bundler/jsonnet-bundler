@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 / 2022-06-22
+
+- **[ENHANCEMENT]** Update dependencies and fix CI
+
 ## 0.5.0 / 2022-06-09
 
 #### Changes:

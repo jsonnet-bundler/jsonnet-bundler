@@ -51,7 +51,7 @@ check-license:
 	@./scripts/check_license.sh
 
 embedmd:
-	pushd /tmp && GO111MODULES=on go get github.com/campoy/embedmd && popd
+	pushd /tmp && go install github.com/campoy/embedmd@latest && popd
 
 # Other
 clean:

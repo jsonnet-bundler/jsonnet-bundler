@@ -1,99 +1,75 @@
----
 kind: pipeline
 name: default
-
 platform:
-  os: linux
   arch: amd64
-
+  os: linux
 steps:
-- name: gomod
-  pull: always
-  image: golang:latest
-  commands:
+- commands:
   - go mod vendor
   - git diff --exit-code
   environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-      exclude:
-      - tag
-
-- name: build-1.11
-  pull: always
-  image: golang:1.11
-  commands:
-  - make build
-  - make test
-  - make test-integration
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-      exclude:
-      - tag
-
-- name: build-1.12
-  pull: always
-  image: golang:1.12
-  commands:
-  - make build
-  - make test
-  - make test-integration
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-      exclude:
-      - tag
-
-- name: build-1.13
-  pull: always
-  image: golang:1.13
-  commands:
-  - make build
-  - make test
-  - make test-integration
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-      exclude:
-      - tag
-
-- name: build-1.14-rc
-  pull: always
-  image: golang:1.14-rc
-  commands:
-  - make build
-  - make test
-  - make test-integration
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-      exclude:
-      - tag
-
-- name: generate
-  pull: always
+    CGO_ENABLED: "0"
+    GO111MODULE: "on"
   image: golang:latest
-  commands:
+  name: gomod
+  pull: always
+  when:
+    event:
+      exclude:
+      - tag
+- commands:
+  - make build
+  - make test
+  - make test-integration
+  environment:
+    CGO_ENABLED: "0"
+    GO111MODULE: "on"
+  image: golang:1.16
+  name: build-1.16
+  pull: always
+  when:
+    event:
+      exclude:
+      - tag
+- commands:
+  - make build
+  - make test
+  - make test-integration
+  environment:
+    CGO_ENABLED: "0"
+    GO111MODULE: "on"
+  image: golang:1.17
+  name: build-1.17
+  pull: always
+  when:
+    event:
+      exclude:
+      - tag
+- commands:
+  - make build
+  - make test
+  - make test-integration
+  environment:
+    CGO_ENABLED: "0"
+    GO111MODULE: "on"
+  image: golang:1.18
+  name: build-1.18
+  pull: always
+  when:
+    event:
+      exclude:
+      - tag
+- commands:
   - make check-license
   - make generate
   - git diff --exit-code
   environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
+    CGO_ENABLED: "0"
+    GO111MODULE: "on"
+  image: golang:latest
+  name: generate
+  pull: always
   when:
     event:
       exclude:
       - tag
-
-...

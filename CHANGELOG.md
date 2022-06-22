@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0 / 2022-06-09
+
+#### Changes:
+
+- **[FEATURE]** Add --quiet option to suppress git progress output (#124)
+- **[FEATURE]** Support Bitbucket personal repositories (#156)
+- **[FEATURE]** Add --legacy-name flag #158
+- **[ENHANCEMENT]** Windows enhancements (#110)
+- **[BUGFIX]** Allow dots in a repository path's "user" section (#106)
+- **[BUGFIX]** On windows, use `\` instead of `/` (#115)
+- **[BUGFIX]** Replace `/` in version by `-` (#146)
+- **[BUGFIX]** Correct path resolution to nested local dependencies (#151)
+
 ## 0.4.0 / 2020-05-15
 
 You can now `jb update` a single dependency.  

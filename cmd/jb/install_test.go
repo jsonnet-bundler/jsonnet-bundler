@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
 // +build integration
 
 package main
@@ -101,7 +102,7 @@ func testInstallCommandWithJsonnetHome(t *testing.T, jsonnetHome string) {
 			jsonnetFileContent(t, jsonnetfile.File, []byte(initContents))
 
 			// install something, check it writes only if required, etc.
-			installCommand("", jsonnetHome, tc.URIs, tc.single)
+			installCommand("", jsonnetHome, tc.URIs, tc.single, "")
 			jsonnetFileContent(t, jsonnetfile.File, tc.ExpectedJsonnetFile)
 			if tc.ExpectedJsonnetLockFile != nil {
 				jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)

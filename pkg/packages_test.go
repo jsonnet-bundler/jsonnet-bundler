@@ -21,17 +21,18 @@ import (
 )
 
 func TestKnown(t *testing.T) {
-	deps := map[string]deps.Dependency{
-		"ksonnet-lib": deps.Dependency{
-			Source: deps.Source{GitSource: &deps.Git{
+	testDeps := deps.NewOrdered()
+	testDeps.Set("ksonnet-lib", deps.Dependency{
+		Source: deps.Source{
+			GitSource: &deps.Git{
 				Scheme: deps.GitSchemeHTTPS,
 				Host:   "github.com",
 				User:   "ksonnet",
 				Repo:   "ksonnet-lib",
 				Subdir: "/ksonnet.beta.4",
-			}},
+			},
 		},
-	}
+	})
 
 	paths := []string{
 		"github.com",
@@ -58,27 +59,27 @@ func TestKnown(t *testing.T) {
 	}
 
 	for _, p := range paths {
-		if known(deps, p) != w[p] {
+		if known(testDeps, p) != w[p] {
 			t.Fatalf("expected %s to be %v", p, w[p])
 		}
 	}
 }
 
 func TestCleanLegacyName(t *testing.T) {
-	deps := func(name string) map[string]deps.Dependency {
-		return map[string]deps.Dependency{
-			"ksonnet-lib": deps.Dependency{
-				LegacyNameCompat: name,
-				Source: deps.Source{GitSource: &deps.Git{
+	testList := func(name string) *deps.Ordered {
+		l := deps.NewOrdered()
+		l.Set("ksonnet-lib", deps.Dependency{
+			LegacyNameCompat: name,
+			Source: deps.Source{
+				GitSource: &deps.Git{
 					Scheme: deps.GitSchemeHTTPS,
 					Host:   "github.com",
 					User:   "ksonnet",
 					Repo:   "ksonnet-lib",
 					Subdir: "/ksonnet.beta.4",
 				}},
-			},
-		}
-
+		})
+		return l
 	}
 	cases := map[string]bool{
 		"ksonnet":        false,
@@ -86,9 +87,9 @@ func TestCleanLegacyName(t *testing.T) {
 	}
 
 	for name, want := range cases {
-		list := deps(name)
+		list := testList(name)
 		CleanLegacyName(list)
-		if (list["ksonnet-lib"].LegacyNameCompat == "") != want {
+		if (list.GetOrDefault("ksonnet-lib", deps.Dependency{}).LegacyNameCompat == "") != want {
 			t.Fatalf("expected `%s` to be removed: %v", name, want)
 		}
 	}

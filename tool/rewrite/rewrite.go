@@ -31,9 +31,10 @@ var expr = regexp.MustCompile(`(?mU)(import ["'])(.*)(\/.*["'])`)
 
 // Rewrite changes all imports in `dir` from legacy to absolute style
 // All files in `vendorDir` are ignored
-func Rewrite(dir, vendorDir string, packages map[string]deps.Dependency) error {
+func Rewrite(dir, vendorDir string, packages *deps.Ordered) error {
 	imports := make(map[string]string)
-	for _, p := range packages {
+	for _, k := range packages.Keys() {
+		p, _ := packages.Get(k)
 		if p.LegacyName() == p.Name() {
 			continue
 		}

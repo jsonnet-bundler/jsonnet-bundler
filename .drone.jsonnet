@@ -39,9 +39,9 @@
       ],
     },
 
-    build('1.16'),
-    build('1.17'),
-    build('1.18'),
+    build('1.21'),
+    build('1.22'),
+    build('1.23'),
 
     golang() {
       name: 'generate',

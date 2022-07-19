@@ -24,8 +24,8 @@ steps:
   environment:
     CGO_ENABLED: "0"
     GO111MODULE: "on"
-  image: golang:1.16
-  name: build-1.16
+  image: golang:1.21
+  name: build-1.21
   pull: always
   when:
     event:
@@ -38,8 +38,8 @@ steps:
   environment:
     CGO_ENABLED: "0"
     GO111MODULE: "on"
-  image: golang:1.17
-  name: build-1.17
+  image: golang:1.22
+  name: build-1.22
   pull: always
   when:
     event:
@@ -52,8 +52,8 @@ steps:
   environment:
     CGO_ENABLED: "0"
     GO111MODULE: "on"
-  image: golang:1.18
-  name: build-1.18
+  image: golang:1.23
+  name: build-1.23
   pull: always
   when:
     event:

@@ -17,7 +17,7 @@ cross: clean
 	  -output="$(OUT_DIR)/jb-{{.OS}}-{{.Arch}}" \
 	  -ldflags=$(LDFLAGS) \
 	  -arch="amd64 arm64 arm" -os="linux" \
-	  -osarch="darwin/amd64" \
+	  -arch="amd64 arm64" -os="darwin" \
 	  -osarch="windows/amd64" \
 	  ./cmd/$(BIN)
 

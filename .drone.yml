@@ -24,36 +24,36 @@ steps:
   environment:
     CGO_ENABLED: "0"
     GO111MODULE: "on"
-  image: golang:1.16
-  name: build-1.16
-  pull: always
-  when:
-    event:
-      exclude:
-      - tag
-- commands:
-  - make build
-  - make test
-  - make test-integration
-  environment:
-    CGO_ENABLED: "0"
-    GO111MODULE: "on"
-  image: golang:1.17
-  name: build-1.17
-  pull: always
-  when:
-    event:
-      exclude:
-      - tag
-- commands:
-  - make build
-  - make test
-  - make test-integration
-  environment:
-    CGO_ENABLED: "0"
-    GO111MODULE: "on"
   image: golang:1.18
   name: build-1.18
+  pull: always
+  when:
+    event:
+      exclude:
+      - tag
+- commands:
+  - make build
+  - make test
+  - make test-integration
+  environment:
+    CGO_ENABLED: "0"
+    GO111MODULE: "on"
+  image: golang:1.19
+  name: build-1.19
+  pull: always
+  when:
+    event:
+      exclude:
+      - tag
+- commands:
+  - make build
+  - make test
+  - make test-integration
+  environment:
+    CGO_ENABLED: "0"
+    GO111MODULE: "on"
+  image: golang:1.20
+  name: build-1.20
   pull: always
   when:
     event:

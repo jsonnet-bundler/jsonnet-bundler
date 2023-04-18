@@ -88,6 +88,8 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 	}
 	defer gzr.Close()
 
+	subDirWithoutSlash := strings.TrimPrefix(subDir, "/")
+
 	tr := tar.NewReader(gzr)
 
 	for {
@@ -111,13 +113,18 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 		suffix := parts[1]
 		prefix := dst
 
-		// reconstruct the target parh for the archive entry
+		// reconstruct the target path for the archive entry
 		target := filepath.Join(prefix, suffix)
 
 		// if subdir is provided and target is not under it, skip it
 		subDirPath := filepath.Join(prefix, subDir)
 		if subDir != "" && !strings.HasPrefix(target, subDirPath) {
 			continue
+		}
+
+		// strip the subdir part if present
+		if subDir != "" {
+			target = filepath.Join(prefix, strings.TrimPrefix(suffix, subDirWithoutSlash))
 		}
 
 		// check the file type
@@ -183,12 +190,12 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	destPath := path.Join(dir, name)
 
 	pkgh := sha256.Sum256([]byte(fmt.Sprintf("jsonnetpkg-%s-%s", strings.Replace(name, "/", "-", -1), strings.Replace(version, "/", "-", -1))))
-	// using 16 bytes should be a good middle ground between length and collision resistance
-	tmpDir, err := ioutil.TempDir(filepath.Join(dir, ".tmp"), hex.EncodeToString(pkgh[:16]))
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create tmp dir")
+
+	// Create the cache directory for the current package
+	cacheDir := filepath.Join(dir, "cache", hex.EncodeToString(pkgh[:16]))
+	if err := os.MkdirAll(cacheDir, os.ModePerm); err != nil {
+		return "", errors.Wrap(err, "failed to create cache dir")
 	}
-	defer os.RemoveAll(tmpDir)
 
 	// Optimization for GitHub sources: download a tarball archive of the requested
 	// version instead of cloning the entire
@@ -206,28 +213,30 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		}
 
 		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", strings.TrimSuffix(p.Source.Remote(), ".git"), commitSha)
-		archiveFilepath := fmt.Sprintf("%s.tar.gz", tmpDir)
+		archiveFilepath := fmt.Sprintf("%s/%s.tar.gz", cacheDir, commitSha)
 
-		defer os.Remove(archiveFilepath)
-		err = downloadGitHubArchive(archiveFilepath, archiveUrl)
+		// Check if the archive is already present in the cache, otherwise download it.
+		if _, err := os.Stat(archiveFilepath); errors.Is(err, os.ErrNotExist) {
+			err = downloadGitHubArchive(archiveFilepath, archiveUrl)
+		} else {
+			if !GitQuiet {
+				color.Cyan("CACHE HIT %s", archiveFilepath)
+			}
+		}
+
 		if err == nil {
 			var ar *os.File
 			ar, err = os.Open(archiveFilepath)
 			defer ar.Close()
 			if err == nil {
-				// Extract the sub-directory (if any) from the archive
-				// If none specified, the entire archive is unpacked
-				err = gzipUntar(tmpDir, ar, p.Source.Subdir)
-
-				// Move the extracted directory to its final destination
-				if err == nil {
-					if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
-						panic(err)
-					}
-					if err := os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath); err != nil {
-						panic(err)
-					}
+				// Ensure, the destination directory exists
+				if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
+					panic(err)
 				}
+
+				// Extract the sub-directory (if any) from the archive to the final destination
+				// If none specified, the entire archive is unpacked
+				err = gzipUntar(destPath, ar, p.Source.Subdir)
 			}
 		}
 
@@ -251,7 +260,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 		}
-		cmd.Dir = tmpDir
+		cmd.Dir = cacheDir
 		return cmd
 	}
 
@@ -289,7 +298,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		}
 
 		glob := []byte(p.Source.Subdir + "/*\n")
-		err = ioutil.WriteFile(filepath.Join(tmpDir, ".git", "info", "sparse-checkout"), glob, 0644)
+		err = ioutil.WriteFile(filepath.Join(cacheDir, ".git", "info", "sparse-checkout"), glob, 0644)
 		if err != nil {
 			return "", err
 		}
@@ -304,7 +313,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	b := bytes.NewBuffer(nil)
 	cmd = exec.CommandContext(ctx, "git", "rev-parse", "HEAD")
 	cmd.Stdout = b
-	cmd.Dir = tmpDir
+	cmd.Dir = cacheDir
 	err = cmd.Run()
 	if err != nil {
 		return "", err
@@ -312,7 +321,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 
 	commitHash := strings.TrimSpace(b.String())
 
-	err = os.RemoveAll(path.Join(tmpDir, ".git"))
+	err = os.RemoveAll(path.Join(cacheDir, ".git"))
 	if err != nil {
 		return "", err
 	}
@@ -327,7 +336,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		return "", errors.Wrap(err, "failed to clean previous destination path")
 	}
 
-	err = os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath)
+	err = os.Rename(path.Join(cacheDir, p.Source.Subdir), destPath)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to move package")
 	}

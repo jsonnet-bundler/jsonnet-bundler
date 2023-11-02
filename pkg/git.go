@@ -58,7 +58,7 @@ func downloadGitHubArchive(filepath string, url string) error {
 	token := ""
 
 	for i := 0; token == "" && i < len(token_env_vars); i++ {
-		token = os.Getenv("GITHUB_TOKEN")
+		token = os.Getenv(token_env_vars[i])
 	}
 
 	if token != "" {

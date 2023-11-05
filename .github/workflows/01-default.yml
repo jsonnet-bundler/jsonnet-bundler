@@ -1,0 +1,61 @@
+name: Default Workflow
+
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - '**'
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go_version: [1.16, 1.17, 1.18]
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go_version }}
+        install-go: true
+
+    - name: Cache Go Modules
+      uses: actions/cache@v2
+      with:
+        path: ~/go/pkg/mod
+        key: go-${{ matrix.go_version }}-${{ runner.os }}
+
+    - name: Check Go version
+      run: go version
+
+    - name: Go mod vendor
+      run: go mod vendor
+    - name: Git diff check
+      run: git diff --exit-code
+
+    - name: Build and Test
+      run: |
+        make build
+        make test
+        make test-integration
+
+    - name: Check License and Generate
+      run: |
+        make check-license
+        make generate
+        git diff --exit-code
+
+    - name: Cleanup
+      run: go clean -modcache
+
+    - name: Post Cleanup
+      run: go clean -cache

@@ -27,10 +27,16 @@ import (
 )
 
 const (
-	installActionName = "install"
-	updateActionName  = "update"
-	initActionName    = "init"
-	rewriteActionName = "rewrite"
+	installActionName        = "install"
+	updateActionName         = "update"
+	initActionName           = "init"
+	rewriteActionName        = "rewrite"
+	registryActionName       = "registry"
+	registryAddActionName    = "add"
+	registryUpdateActionName = "update"
+	registrySearchActionName = "search"
+	registryListActionName   = "list"
+	registryRemoveActionName = "rm"
 )
 
 var Version = "dev"
@@ -40,6 +46,12 @@ func main() {
 }
 
 func Main() int {
+	err := pkg.LoadRegistries()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, errors.Wrapf(err, "Error loading config"))
+		return 1
+	}
+
 	cfg := struct {
 		JsonnetHome string
 	}{}
@@ -55,6 +67,26 @@ func Main() int {
 		Short('q').BoolVar(&pkg.GitQuiet)
 
 	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
+
+	registryCmd := a.Command(registryActionName, "Manage registries of jsonnet packages")
+
+	registryAddCmd := registryCmd.Command(registryAddActionName, "Add a new registry")
+	registryAddCmdName := registryAddCmd.Arg("name", "Name of the registry").String()
+	registryAddCmdDescription := registryAddCmd.Arg("description", "Description of the registry").String()
+	registryAddCmdUrl := registryAddCmd.Arg("url", "Url of the registry").String()
+	registryAddCmdFile := registryAddCmd.Arg("file", "Filename of the file that contains the package data").String()
+
+	registryRemoveCmd := registryCmd.Command(registryRemoveActionName, "Remove a registry")
+	registryRemoveCmdName := registryRemoveCmd.Arg("name", "Name of the registry").String()
+
+	registryUpdateCmd := registryCmd.Command(registryUpdateActionName, "Update registry data")
+
+	registryListCmd := registryCmd.Command(registryListActionName, "List registries")
+
+	registrySearchCmd := registryCmd.Command(registrySearchActionName, "Search package in registries")
+	registrySearchCmdQuery := registrySearchCmd.Arg("query", "Queries to search for in registries").String()
+	registrySearchCmdDetails := registrySearchCmd.Flag("details", "Show details in output").Short('d').Bool()
+	registrySearchCmdVersions := registrySearchCmd.Flag("all-versions", "Show all versions").Short('a').Bool()
 
 	installCmd := a.Command(installActionName, "Install new dependencies. Existing ones are silently skipped")
 	installCmdURIs := installCmd.Arg("uris", "URIs to packages to install, URLs or file paths").Strings()
@@ -89,6 +121,16 @@ func Main() int {
 		return updateCommand(workdir, cfg.JsonnetHome, *updateCmdURIs)
 	case rewriteCmd.FullCommand():
 		return rewriteCommand(workdir, cfg.JsonnetHome)
+	case registryAddCmd.FullCommand():
+		return registryAddCommand(*registryAddCmdName, *registryAddCmdDescription, *registryAddCmdUrl, *registryAddCmdFile)
+	case registryUpdateCmd.FullCommand():
+		return registryUpdateCommand()
+	case registrySearchCmd.FullCommand():
+		return registrySearchCommand(*registrySearchCmdQuery, *registrySearchCmdDetails, *registrySearchCmdVersions)
+	case registryListCmd.FullCommand():
+		return registryListCommand()
+	case registryRemoveCmd.FullCommand():
+		return registryRemoveCommand(*registryRemoveCmdName)
 	default:
 		installCommand(workdir, cfg.JsonnetHome, []string{}, false, "")
 	}

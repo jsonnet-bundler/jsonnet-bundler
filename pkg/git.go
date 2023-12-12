@@ -23,7 +23,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -147,7 +146,6 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 				}
 				return nil
 			}()
-
 			if err != nil {
 				return err
 			}
@@ -174,7 +172,7 @@ func remoteResolveRef(ctx context.Context, remote string, ref string) (string, e
 	if err != nil {
 		return "", err
 	}
-	commitShaPattern := regexp.MustCompile("^([0-9a-f]{40,})\\b")
+	commitShaPattern := regexp.MustCompile(`^([0-9a-f]{40,})\b`)
 	commitSha := commitShaPattern.FindString(b.String())
 	return commitSha, nil
 }
@@ -182,9 +180,9 @@ func remoteResolveRef(ctx context.Context, remote string, ref string) (string, e
 func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (string, error) {
 	destPath := path.Join(dir, name)
 
-	pkgh := sha256.Sum256([]byte(fmt.Sprintf("jsonnetpkg-%s-%s", strings.Replace(name, "/", "-", -1), strings.Replace(version, "/", "-", -1))))
+	pkgh := sha256.Sum256([]byte(fmt.Sprintf("jsonnetpkg-%s-%s", strings.ReplaceAll(name, "/", "-"), strings.ReplaceAll(version, "/", "-"))))
 	// using 16 bytes should be a good middle ground between length and collision resistance
-	tmpDir, err := ioutil.TempDir(filepath.Join(dir, ".tmp"), hex.EncodeToString(pkgh[:16]))
+	tmpDir, err := os.MkdirTemp(filepath.Join(dir, ".tmp"), hex.EncodeToString(pkgh[:16]))
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create tmp dir")
 	}
@@ -192,11 +190,11 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 
 	// Optimization for GitHub sources: download a tarball archive of the requested
 	// version instead of cloning the entire
-	isGitHubRemote, err := regexp.MatchString(`^(https|ssh)://github\.com/.+$`, p.Source.Remote())
+	isGitHubRemote, _ := regexp.MatchString(`^(https|ssh)://github\.com/.+$`, p.Source.Remote())
 	if isGitHubRemote {
 		// Let git ls-remote decide if "version" is a ref or a commit SHA in the unlikely
 		// but possible event that a ref is comprised of 40 or more hex characters
-		commitSha, err := remoteResolveRef(ctx, p.Source.Remote(), version)
+		commitSha, _ := remoteResolveRef(ctx, p.Source.Remote(), version)
 
 		// If the ref resolution failed and "version" looks like a SHA,
 		// assume it is one and proceed.
@@ -213,8 +211,8 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		if err == nil {
 			var ar *os.File
 			ar, err = os.Open(archiveFilepath)
-			defer ar.Close()
 			if err == nil {
+				defer ar.Close()
 				// Extract the sub-directory (if any) from the archive
 				// If none specified, the entire archive is unpacked
 				err = gzipUntar(tmpDir, ar, p.Source.Subdir)
@@ -289,7 +287,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		}
 
 		glob := []byte(p.Source.Subdir + "/*\n")
-		err = ioutil.WriteFile(filepath.Join(tmpDir, ".git", "info", "sparse-checkout"), glob, 0644)
+		err = os.WriteFile(filepath.Join(tmpDir, ".git", "info", "sparse-checkout"), glob, 0644)
 		if err != nil {
 			return "", err
 		}

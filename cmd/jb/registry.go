@@ -35,8 +35,12 @@ func registryAddCommand(name, description, url, filename string) int {
 	}
 
 	pkg.Registries.Entries = append(pkg.Registries.Entries, *registry)
+	err := pkg.Registries.SaveRegistries()
+	if err != nil {
+		kingpin.FatalIfError(err, "could not save registry")
+	}
 
-	err := registry.Init(context.TODO())
+	err = registry.Init(context.TODO())
 	if err != nil {
 		kingpin.FatalIfError(err, "could not init registry")
 	}

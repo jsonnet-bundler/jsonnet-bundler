@@ -4,6 +4,7 @@ SHELL=/bin/bash
 
 GITHUB_URL=github.com/jsonnet-bundler/jsonnet-bundler
 VERSION := $(shell git describe --tags --dirty --always)
+GOPATH=$(HOME)/go
 OUT_DIR=_output
 BIN?=jb
 PKGS=$(shell go list ./... | grep -v /vendor/)

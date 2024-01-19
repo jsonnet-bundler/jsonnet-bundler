@@ -39,7 +39,7 @@ func updateCommand(dir, jsonnetHome string, uris []string) int {
 	kingpin.FatalIfError(err, "failed to load lockfile")
 
 	kingpin.FatalIfError(
-		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
+		os.MkdirAll(filepath.Join(jsonnetHome, ".tmp"), os.ModePerm),
 		"creating vendor folder")
 
 	locks := lockFile.Dependencies
@@ -58,7 +58,7 @@ func updateCommand(dir, jsonnetHome string, uris []string) int {
 		locks = make(map[string]deps.Dependency)
 	}
 
-	newLocks, err := pkg.Ensure(jsonnetFile, filepath.Join(dir, jsonnetHome), locks)
+	newLocks, err := pkg.Ensure(jsonnetFile, jsonnetHome, locks)
 	kingpin.FatalIfError(err, "updating")
 
 	kingpin.FatalIfError(

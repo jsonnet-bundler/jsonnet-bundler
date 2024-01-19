@@ -55,7 +55,6 @@ jb install https://github.com/anguslees/kustomize-libsonnet
 ```
 
 Now write `myconfig.jsonnet`, which can import a file from that package.
-Remember to use `-J vendor` when running Jsonnet to include the vendor tree.
 
 ```jsonnet
 local kustomize = import 'kustomize-libsonnet/kustomize.libsonnet';
@@ -67,6 +66,12 @@ local my_resource = {
 };
 
 kustomize.namePrefix('staging-')(my_resource)
+```
+
+And **build** using `-J vendor` to include the vendor tree.
+
+```sh
+jsonnet -J vendor myconfig.jsonnet
 ```
 
 To depend on a package that is in a subtree of a Github repo (this package also

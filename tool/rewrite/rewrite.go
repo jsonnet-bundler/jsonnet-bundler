@@ -30,7 +30,7 @@ import (
 var expr = regexp.MustCompile(`(?mU)(import ["'])(.*)(\/.*["'])`)
 
 // Rewrite changes all imports in `dir` from legacy to absolute style
-// All files in `vendorDir` are ignored
+// All files in `jsonnetHome` are ignored
 func Rewrite(dir, jsonnetHome string, packages map[string]deps.Dependency) error {
 	imports := make(map[string]string)
 	for _, p := range packages {

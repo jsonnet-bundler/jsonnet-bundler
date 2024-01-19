@@ -68,8 +68,8 @@ func testRewriteWithJsonnetHome(t *testing.T, jsonnetHome string) {
 	err = ioutil.WriteFile(name, []byte(sample), 0644)
 	require.Nil(t, err)
 
-	vendorDir := filepath.Join(dir, jsonnetHome)
-	err = os.MkdirAll(vendorDir, os.ModePerm)
+	jsonnetHome = filepath.Join(dir, jsonnetHome)
+	err = os.MkdirAll(jsonnetHome, os.ModePerm)
 	require.Nil(t, err)
 
 	err = Rewrite(dir, jsonnetHome, locks)

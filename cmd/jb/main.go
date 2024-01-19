@@ -78,7 +78,11 @@ func Main() int {
 		return 1
 	}
 
-	cfg.JsonnetHome = filepath.Clean(cfg.JsonnetHome)
+	jh := filepath.Clean(cfg.JsonnetHome)
+	if !filepath.IsAbs(jh) {
+		jh = filepath.Join(workdir, jh)
+	}
+	cfg.JsonnetHome = jh
 
 	switch command {
 	case initCmd.FullCommand():

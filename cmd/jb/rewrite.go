@@ -22,13 +22,13 @@ import (
 	"github.com/jsonnet-bundler/jsonnet-bundler/tool/rewrite"
 )
 
-func rewriteCommand(dir, vendorDir string) int {
+func rewriteCommand(dir, jsonnetHome string) int {
 	locks, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.LockFile))
 	if err != nil {
 		kingpin.Fatalf("Failed to load lockFile: %s.\nThe locks are required to compute the new import names. Make sure to run `jb install` first.", err)
 	}
 
-	if err := rewrite.Rewrite(dir, vendorDir, locks.Dependencies); err != nil {
+	if err := rewrite.Rewrite(dir, jsonnetHome, locks.Dependencies); err != nil {
 		kingpin.FatalIfError(err, "")
 	}
 

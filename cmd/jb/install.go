@@ -51,7 +51,7 @@ func installCommand(dir, jsonnetHome string, uris []string, single bool, legacyN
 	kingpin.FatalIfError(err, "")
 
 	kingpin.FatalIfError(
-		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
+		os.MkdirAll(filepath.Join(jsonnetHome, ".tmp"), os.ModePerm),
 		"creating vendor folder")
 
 	if len(uris) > 1 && legacyName != "" {
@@ -81,8 +81,7 @@ func installCommand(dir, jsonnetHome string, uris []string, single bool, legacyN
 		}
 	}
 
-	jsonnetPkgHomeDir := filepath.Join(dir, jsonnetHome)
-	locked, err := pkg.Ensure(jsonnetFile, jsonnetPkgHomeDir, lockFile.Dependencies)
+	locked, err := pkg.Ensure(jsonnetFile, jsonnetHome, lockFile.Dependencies)
 	kingpin.FatalIfError(err, "failed to install packages")
 
 	pkg.CleanLegacyName(jsonnetFile.Dependencies)

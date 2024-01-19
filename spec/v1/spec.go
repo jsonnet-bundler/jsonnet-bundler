@@ -37,7 +37,7 @@ type JsonnetFile struct {
 func New() JsonnetFile {
 	return JsonnetFile{
 		Dependencies:  make(map[string]deps.Dependency),
-		LegacyImports: true,
+		LegacyImports: false,
 	}
 }
 

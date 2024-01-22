@@ -18,11 +18,14 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
@@ -140,11 +143,10 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 			Name:             "NoDiffNotEmpty",
 			JsonnetFileBytes: []byte(`{"dependencies": [{"version": "master"}]}`),
 			NewJsonnetFile: v1.JsonnetFile{
-				Dependencies: map[string]deps.Dependency{
-					"": {
+				Dependencies: addDependencies(deps.NewOrdered(),
+					deps.Dependency{
 						Version: "master",
-					},
-				},
+					}),
 			},
 			ExpectWrite: false,
 		},
@@ -152,11 +154,10 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 			Name:             "DiffVersion",
 			JsonnetFileBytes: []byte(`{"dependencies": [{"version": "1.0"}]}`),
 			NewJsonnetFile: v1.JsonnetFile{
-				Dependencies: map[string]deps.Dependency{
-					"": {
+				Dependencies: addDependencies(deps.NewOrdered(),
+					deps.Dependency{
 						Version: "2.0",
-					},
-				},
+					}),
 			},
 			ExpectWrite: true,
 		},
@@ -164,8 +165,8 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 			Name:             "Diff",
 			JsonnetFileBytes: []byte(`{}`),
 			NewJsonnetFile: v1.JsonnetFile{
-				Dependencies: map[string]deps.Dependency{
-					"github.com/foobar/foobar": {
+				Dependencies: addDependencies(deps.NewOrdered(),
+					deps.Dependency{
 						Source: deps.Source{
 							GitSource: &deps.Git{
 								Scheme: deps.GitSchemeHTTPS,
@@ -176,7 +177,7 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 							},
 						},
 						Version: "master",
-					}},
+					}),
 			},
 			ExpectWrite: true,
 		},
@@ -202,5 +203,104 @@ func TestWriteChangedJsonnetFile(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestInstallTransitive(t *testing.T) {
+	const (
+		frozenLibFirstCommit  = "9f40207f668e382b706e1822f2d46ce2cd0a57cc"
+		frozenLibSecondCommit = "ed7c1aff9e10d3b42fb130446d495f1c769ecd7b"
+	)
+
+	baseDir := t.TempDir()
+	subDirA := filepath.Join(baseDir, "a")
+	subDirB := filepath.Join(baseDir, "b")
+
+	writeDepFileTree(t, map[string]v1.JsonnetFile{
+		baseDir: {
+			Dependencies: addDependencies(deps.NewOrdered(),
+				localDependency(subDirA),
+				localDependency(subDirB),
+			)},
+		subDirA: jsonnetFileWithFrozenLib(frozenLibFirstCommit, ""),
+		subDirB: jsonnetFileWithFrozenLib(frozenLibSecondCommit, ""),
+	})
+
+	require.Equal(t, 0, installCommand(baseDir, "vendor", nil, false, ""))
+
+	lockCheckFrozenLibVersion(t, filepath.Join(baseDir, "jsonnetfile.lock.json"), frozenLibFirstCommit)
+	require.NoError(t, os.RemoveAll(filepath.Join(baseDir, "jsonnetfile.lock.json")))
+
+	// Reverse the order of the dependencies. The lock file should now contain the second commit in its version field.
+	writeDepFileTree(t, map[string]v1.JsonnetFile{
+		subDirA: jsonnetFileWithFrozenLib(frozenLibSecondCommit, ""),
+		subDirB: jsonnetFileWithFrozenLib(frozenLibFirstCommit, ""),
+	})
+
+	require.Equal(t, 0, installCommand(baseDir, "vendor", nil, false, ""))
+
+	lockCheckFrozenLibVersion(t, filepath.Join(baseDir, "jsonnetfile.lock.json"), frozenLibSecondCommit)
+}
+
+func lockCheckFrozenLibVersion(t *testing.T, lockPath, version string) {
+	t.Helper()
+
+	rawLock, err := os.ReadFile(lockPath)
+	require.NoError(t, err)
+	var lock v1.JsonnetFile
+	require.NoError(t, json.Unmarshal([]byte(rawLock), &lock))
+
+	lf, lfExists := lock.Dependencies.Get("github.com/jsonnet-bundler/frozen-lib")
+	require.True(t, lfExists, "expected to find frozen-lib in lock file")
+	require.Equal(t, version, lf.Version, "lock file: expected frozen-lib to have commit version of the first dependency in the base jsonnet file")
+}
+
+func addDependencies(o *deps.Ordered, ds ...deps.Dependency) *deps.Ordered {
+	for _, d := range ds {
+		o.Set(d.Name(), d)
+	}
+	return o
+}
+
+func jsonnetFileWithFrozenLib(version, sum string) v1.JsonnetFile {
+	return v1.JsonnetFile{
+		Dependencies: addDependencies(deps.NewOrdered(),
+			frozenDependency(version, sum)),
+	}
+}
+
+func frozenDependency(version, sum string) deps.Dependency {
+	return deps.Dependency{
+		Source: deps.Source{
+			GitSource: &deps.Git{
+				Scheme: "https://",
+				Host:   "github.com",
+				User:   "jsonnet-bundler",
+				Repo:   "frozen-lib",
+			},
+		},
+		Version: version,
+		Sum:     sum,
+	}
+}
+
+func localDependency(dir string) deps.Dependency {
+	return deps.Dependency{
+		Source: deps.Source{
+			LocalSource: &deps.Local{
+				Directory: dir,
+			},
+		},
+	}
+}
+
+func writeDepFileTree(t *testing.T, files map[string]v1.JsonnetFile) {
+	t.Helper()
+
+	for dir, file := range files {
+		require.NoError(t, os.MkdirAll(dir, os.ModePerm))
+		rj, err := json.Marshal(file)
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "jsonnetfile.json"), rj, 0644))
 	}
 }

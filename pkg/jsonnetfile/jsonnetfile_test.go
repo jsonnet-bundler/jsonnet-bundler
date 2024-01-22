@@ -56,39 +56,43 @@ const v0JSON = `{
   ]
 }`
 
-var v0Jsonnetfile = v1.JsonnetFile{
-	Dependencies: map[string]deps.Dependency{
-		"github.com/grafana/jsonnet-libs/grafana-builder": {
-			Source: deps.Source{
-				GitSource: &deps.Git{
-					Scheme: deps.GitSchemeHTTPS,
-					Host:   "github.com",
-					User:   "grafana",
-					Repo:   "jsonnet-libs",
-					Subdir: "/grafana-builder",
-				},
+var v0Jsonnetfile = func() v1.JsonnetFile {
+	dep := v1.JsonnetFile{
+		Dependencies:  deps.NewOrdered(),
+		LegacyImports: true,
+	}
+
+	dep.Dependencies.Set("github.com/grafana/jsonnet-libs/grafana-builder", deps.Dependency{
+		Source: deps.Source{
+			GitSource: &deps.Git{
+				Scheme: deps.GitSchemeHTTPS,
+				Host:   "github.com",
+				User:   "grafana",
+				Repo:   "jsonnet-libs",
+				Subdir: "/grafana-builder",
 			},
-			Version:          "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
-			Sum:              "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
-			LegacyNameCompat: "grafana-builder",
 		},
-		"github.com/prometheus/prometheus/documentation/prometheus-mixin": {
-			Source: deps.Source{
-				GitSource: &deps.Git{
-					Scheme: deps.GitSchemeHTTPS,
-					Host:   "github.com",
-					User:   "prometheus",
-					Repo:   "prometheus",
-					Subdir: "/documentation/prometheus-mixin",
-				},
+		Version:          "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
+		Sum:              "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
+		LegacyNameCompat: "grafana-builder",
+	})
+	dep.Dependencies.Set("github.com/prometheus/prometheus/documentation/prometheus-mixin", deps.Dependency{
+		Source: deps.Source{
+			GitSource: &deps.Git{
+				Scheme: deps.GitSchemeHTTPS,
+				Host:   "github.com",
+				User:   "prometheus",
+				Repo:   "prometheus",
+				Subdir: "/documentation/prometheus-mixin",
 			},
-			Version:          "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
-			Sum:              "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY=",
-			LegacyNameCompat: "prometheus-mixin",
 		},
-	},
-	LegacyImports: true,
-}
+		Version:          "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
+		Sum:              "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY=",
+		LegacyNameCompat: "prometheus-mixin",
+	})
+
+	return dep
+}()
 
 const v1JSON = `{
   "version": 1,
@@ -118,38 +122,42 @@ const v1JSON = `{
   "legacyImports": false
 }`
 
-var v1Jsonnetfile = v1.JsonnetFile{
-	Dependencies: map[string]deps.Dependency{
-		"github.com/grafana/jsonnet-libs/grafana-builder": {
-			Source: deps.Source{
-				GitSource: &deps.Git{
-					Scheme: deps.GitSchemeHTTPS,
-					Host:   "github.com",
-					User:   "grafana",
-					Repo:   "jsonnet-libs",
-					Subdir: "/grafana-builder",
-				},
+var v1Jsonnetfile = func() v1.JsonnetFile {
+	dep := v1.JsonnetFile{
+		Dependencies:  deps.NewOrdered(),
+		LegacyImports: false,
+	}
+
+	dep.Dependencies.Set("github.com/grafana/jsonnet-libs/grafana-builder", deps.Dependency{
+		Source: deps.Source{
+			GitSource: &deps.Git{
+				Scheme: deps.GitSchemeHTTPS,
+				Host:   "github.com",
+				User:   "grafana",
+				Repo:   "jsonnet-libs",
+				Subdir: "/grafana-builder",
 			},
-			Version: "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
-			Sum:     "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
 		},
-		"github.com/prometheus/prometheus/documentation/prometheus-mixin": {
-			LegacyNameCompat: "prometheus",
-			Source: deps.Source{
-				GitSource: &deps.Git{
-					Scheme: deps.GitSchemeHTTPS,
-					Host:   "github.com",
-					User:   "prometheus",
-					Repo:   "prometheus",
-					Subdir: "/documentation/prometheus-mixin",
-				},
+		Version: "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
+		Sum:     "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
+	})
+	dep.Dependencies.Set("github.com/prometheus/prometheus/documentation/prometheus-mixin", deps.Dependency{
+		LegacyNameCompat: "prometheus",
+		Source: deps.Source{
+			GitSource: &deps.Git{
+				Scheme: deps.GitSchemeHTTPS,
+				Host:   "github.com",
+				User:   "prometheus",
+				Repo:   "prometheus",
+				Subdir: "/documentation/prometheus-mixin",
 			},
-			Version: "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
-			Sum:     "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY=",
 		},
-	},
-	LegacyImports: false,
-}
+		Version: "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
+		Sum:     "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY=",
+	})
+
+	return dep
+}()
 
 func TestVersions(t *testing.T) {
 	tests := []struct {

@@ -53,38 +53,38 @@ const jsonJF = `{
 }`
 
 func testData() JsonnetFile {
-	return JsonnetFile{
+	td := JsonnetFile{
 		LegacyImports: false,
-		Dependencies: map[string]deps.Dependency{
-			"github.com/grafana/jsonnet-libs/grafana-builder": {
-				Source: deps.Source{
-					GitSource: &deps.Git{
-						Scheme: deps.GitSchemeHTTPS,
-						Host:   "github.com",
-						User:   "grafana",
-						Repo:   "jsonnet-libs",
-						Subdir: "/grafana-builder",
-					},
-				},
-				Version: "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
-				Sum:     "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
-			},
-			"github.com/prometheus/prometheus/documentation/prometheus-mixin": {
-				LegacyNameCompat: "prometheus",
-				Source: deps.Source{
-					GitSource: &deps.Git{
-						Scheme: deps.GitSchemeHTTPS,
-						Host:   "github.com",
-						User:   "prometheus",
-						Repo:   "prometheus",
-						Subdir: "/documentation/prometheus-mixin",
-					},
-				},
-				Version: "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
-				Sum:     "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY=",
+		Dependencies:  deps.NewOrdered(),
+	}
+	td.Dependencies.Set("github.com/grafana/jsonnet-libs/grafana-builder", deps.Dependency{
+		Source: deps.Source{
+			GitSource: &deps.Git{
+				Scheme: deps.GitSchemeHTTPS,
+				Host:   "github.com",
+				User:   "grafana",
+				Repo:   "jsonnet-libs",
+				Subdir: "/grafana-builder",
 			},
 		},
-	}
+		Version: "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
+		Sum:     "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
+	})
+	td.Dependencies.Set("github.com/prometheus/prometheus/documentation/prometheus-mixin", deps.Dependency{
+		LegacyNameCompat: "prometheus",
+		Source: deps.Source{
+			GitSource: &deps.Git{
+				Scheme: deps.GitSchemeHTTPS,
+				Host:   "github.com",
+				User:   "prometheus",
+				Repo:   "prometheus",
+				Subdir: "/documentation/prometheus-mixin",
+			},
+		},
+		Version: "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
+		Sum:     "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY=",
+	})
+	return td
 }
 
 // TestUnmarshal checks that unmarshalling works

@@ -27,7 +27,7 @@ const Version uint = 1
 // dependencies. It is used for both, the jsonnetFile and the lockFile.
 type JsonnetFile struct {
 	// List of dependencies
-	Dependencies map[string]deps.Dependency
+	Dependencies *deps.Ordered
 
 	// Symlink files to old location
 	LegacyImports bool
@@ -36,7 +36,7 @@ type JsonnetFile struct {
 // New returns a new JsonnetFile with the dependencies map initialized
 func New() JsonnetFile {
 	return JsonnetFile{
-		Dependencies:  make(map[string]deps.Dependency),
+		Dependencies:  deps.NewOrdered(),
 		LegacyImports: true,
 	}
 }
@@ -58,9 +58,9 @@ func (jf *JsonnetFile) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	jf.Dependencies = make(map[string]deps.Dependency)
+	jf.Dependencies = deps.NewOrdered()
 	for _, d := range s.Dependencies {
-		jf.Dependencies[d.Name()] = d
+		jf.Dependencies.Set(d.Name(), d)
 	}
 
 	jf.LegacyImports = s.LegacyImports
@@ -75,7 +75,8 @@ func (jf JsonnetFile) MarshalJSON() ([]byte, error) {
 	s.Version = Version
 	s.LegacyImports = jf.LegacyImports
 
-	for _, d := range jf.Dependencies {
+	for _, k := range jf.Dependencies.Keys() {
+		d, _ := jf.Dependencies.Get(k)
 		s.Dependencies = append(s.Dependencies, d)
 	}
 

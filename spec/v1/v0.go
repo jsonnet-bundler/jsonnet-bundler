@@ -24,7 +24,8 @@ func FromV0(mv0 v0.JsonnetFile) (JsonnetFile, error) {
 	m := New()
 	m.LegacyImports = true
 
-	for name, old := range mv0.Dependencies {
+	for _, name := range mv0.Dependencies.Keys() {
+		old, _ := mv0.Dependencies.Get(name)
 		var d deps.Dependency
 
 		switch {
@@ -44,7 +45,7 @@ func FromV0(mv0 v0.JsonnetFile) (JsonnetFile, error) {
 		d.Version = old.Version
 		d.LegacyNameCompat = name
 
-		m.Dependencies[d.Name()] = d
+		m.Dependencies.Set(d.Name(), d)
 	}
 
 	return m, nil

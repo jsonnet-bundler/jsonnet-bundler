@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/elliotchance/orderedmap/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,32 +51,32 @@ const jsonJF = `{
 }`
 
 func testData() JsonnetFile {
-	return JsonnetFile{
-		Dependencies: map[string]Dependency{
-			"grafana-builder": {
-				Name: "grafana-builder",
-				Source: Source{
-					GitSource: &GitSource{
-						Remote: "https://github.com/grafana/jsonnet-libs",
-						Subdir: "grafana-builder",
-					},
-				},
-				Version: "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
-				Sum:     "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
-			},
-			"prometheus-mixin": {
-				Name: "prometheus-mixin",
-				Source: Source{
-					GitSource: &GitSource{
-						Remote: "https://github.com/prometheus/prometheus",
-						Subdir: "documentation/prometheus-mixin",
-					},
-				},
-				Version: "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
-				Sum:     "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY=",
+	f := JsonnetFile{Dependencies: orderedmap.NewOrderedMap[string, Dependency]()}
+
+	f.Dependencies.Set("grafana-builder", Dependency{
+		Name: "grafana-builder",
+		Source: Source{
+			GitSource: &GitSource{
+				Remote: "https://github.com/grafana/jsonnet-libs",
+				Subdir: "grafana-builder",
 			},
 		},
-	}
+		Version: "54865853ebc1f901964e25a2e7a0e4d2cb6b9648",
+		Sum:     "ELsYwK+kGdzX1mee2Yy+/b2mdO4Y503BOCDkFzwmGbE=",
+	})
+	f.Dependencies.Set("prometheus-mixin", Dependency{
+		Name: "prometheus-mixin",
+		Source: Source{
+			GitSource: &GitSource{
+				Remote: "https://github.com/prometheus/prometheus",
+				Subdir: "documentation/prometheus-mixin",
+			},
+		},
+		Version: "7c039a6b3b4b2a9d7c613ac8bd3fc16e8ca79684",
+		Sum:     "bVGOsq3hLOw2irNPAS91a5dZJqQlBUNWy3pVwM4+kIY=",
+	})
+
+	return f
 }
 
 // TestUnmarshal checks that unmarshalling works

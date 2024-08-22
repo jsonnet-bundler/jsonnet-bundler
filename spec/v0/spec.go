@@ -17,6 +17,8 @@ package spec
 import (
 	"encoding/json"
 	"sort"
+
+	"github.com/elliotchance/orderedmap/v2"
 )
 
 const Version = 0
@@ -24,13 +26,13 @@ const Version = 0
 // JsonnetFile is the structure of a `.json` file describing a set of jsonnet
 // dependencies. It is used for both, the jsonnetFile and the lockFile.
 type JsonnetFile struct {
-	Dependencies map[string]Dependency
+	Dependencies *orderedmap.OrderedMap[string, Dependency]
 }
 
 // New returns a new JsonnetFile with the dependencies map initialized
 func New() JsonnetFile {
 	return JsonnetFile{
-		Dependencies: make(map[string]Dependency),
+		Dependencies: orderedmap.NewOrderedMap[string, Dependency](),
 	}
 }
 
@@ -47,9 +49,9 @@ func (jf *JsonnetFile) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	jf.Dependencies = make(map[string]Dependency)
+	jf.Dependencies = orderedmap.NewOrderedMap[string, Dependency]()
 	for _, d := range s.Dependencies {
-		jf.Dependencies[d.Name] = d
+		jf.Dependencies.Set(d.Name, d)
 	}
 	return nil
 }
@@ -57,7 +59,8 @@ func (jf *JsonnetFile) UnmarshalJSON(data []byte) error {
 // MarshalJSON serializes a JsonnetFile into json of the format of a `jsonFile`
 func (jf JsonnetFile) MarshalJSON() ([]byte, error) {
 	var s jsonFile
-	for _, d := range jf.Dependencies {
+	for _, k := range jf.Dependencies.Keys() {
+		d, _ := jf.Dependencies.Get(k)
 		s.Dependencies = append(s.Dependencies, d)
 	}
 

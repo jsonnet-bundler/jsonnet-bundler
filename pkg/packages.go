@@ -49,7 +49,7 @@ var (
 //
 // Finally, all unknown files and directories are removed from vendor/
 // The full list of locked depedencies is returned
-func Ensure(direct v1.JsonnetFile, vendorDir string, oldLocks map[string]deps.Dependency) (map[string]deps.Dependency, error) {
+func Ensure(direct v1.JsonnetFile, vendorDir string, oldLocks *deps.Ordered) (*deps.Ordered, error) {
 	// ensure all required files are in vendor
 	// This is the actual installation
 	locks, err := ensure(direct.Dependencies, vendorDir, "", oldLocks)
@@ -105,21 +105,23 @@ func Ensure(direct v1.JsonnetFile, vendorDir string, oldLocks map[string]deps.De
 	return locks, nil
 }
 
-func CleanLegacyName(list map[string]deps.Dependency) {
-	for k, d := range list {
+func CleanLegacyName(list *deps.Ordered) {
+	for _, k := range list.Keys() {
+		d, _ := list.Get(k)
 		// unset if not changed by user
 		if d.LegacyNameCompat == d.Source.LegacyName() {
-			dep := list[k]
+			dep, _ := list.Get(k)
 			dep.LegacyNameCompat = ""
-			list[k] = dep
+			list.Set(k, dep)
 		}
 	}
 }
 
-func cleanLegacySymlinks(vendorDir string, locks map[string]deps.Dependency) error {
+func cleanLegacySymlinks(vendorDir string, locks *deps.Ordered) error {
 	// local packages need to be ignored
 	locals := map[string]bool{}
-	for _, d := range locks {
+	for _, k := range locks.Keys() {
+		d, _ := locks.Get(k)
 		if d.Source.LocalSource == nil {
 			continue
 		}
@@ -142,9 +144,10 @@ func cleanLegacySymlinks(vendorDir string, locks map[string]deps.Dependency) err
 	})
 }
 
-func linkLegacy(vendorDir string, locks map[string]deps.Dependency) error {
+func linkLegacy(vendorDir string, locks *deps.Ordered) error {
 	// create only the ones we want
-	for _, d := range locks {
+	for _, k := range locks.Keys() {
+		d, _ := locks.Get(k)
 		// localSource still uses the relative style
 		if d.Source.LocalSource != nil {
 			continue
@@ -199,9 +202,10 @@ func checkLegacyNameTaken(legacyName string, pkgName string) (bool, error) {
 	return true, nil
 }
 
-func known(deps map[string]deps.Dependency, p string) bool {
+func known(deps *deps.Ordered, p string) bool {
 	p = filepath.ToSlash(p)
-	for _, d := range deps {
+	for _, kd := range deps.Keys() {
+		d, _ := deps.Get(kd)
 		k := filepath.ToSlash(d.Name())
 		if strings.HasPrefix(p, k) || strings.HasPrefix(k, p) {
 			return true
@@ -210,22 +214,23 @@ func known(deps map[string]deps.Dependency, p string) bool {
 	return false
 }
 
-func ensure(direct map[string]deps.Dependency, vendorDir, pathToParentModule string, locks map[string]deps.Dependency) (map[string]deps.Dependency, error) {
-	deps := make(map[string]deps.Dependency)
+func ensure(direct *deps.Ordered, vendorDir, pathToParentModule string, locks *deps.Ordered) (*deps.Ordered, error) {
+	deps := deps.NewOrdered()
 
-	for _, d := range direct {
-		l, present := locks[d.Name()]
+	for _, k := range direct.Keys() {
+		d, _ := direct.Get(k)
+		l, present := locks.Get(d.Name())
 
 		// already locked and the integrity is intact
 		if present {
-			d.Version = locks[d.Name()].Version
+			d.Version = l.Version
 
 			if check(l, vendorDir) {
-				deps[d.Name()] = l
+				deps.Set(d.Name(), l)
 				continue
 			}
 		}
-		expectedSum := locks[d.Name()].Sum
+		expectedSum := l.Sum
 
 		// either not present or not intact: download again
 		dir := filepath.Join(vendorDir, d.Name())
@@ -238,12 +243,13 @@ func ensure(direct map[string]deps.Dependency, vendorDir, pathToParentModule str
 		if expectedSum != "" && locked.Sum != expectedSum {
 			return nil, fmt.Errorf("checksum mismatch for %s. Expected %s but got %s", d.Name(), expectedSum, locked.Sum)
 		}
-		deps[d.Name()] = *locked
+		deps.Set(d.Name(), *locked)
 		// we settled on a new version, add it to the locks for recursion
-		locks[d.Name()] = *locked
+		locks.Set(d.Name(), *locked)
 	}
 
-	for _, d := range deps {
+	for _, k := range deps.Keys() {
+		d, _ := deps.Get(k)
 		if d.Single {
 			// skip dependencies that explicitely don't want nested ones installed
 			continue
@@ -267,9 +273,10 @@ func ensure(direct map[string]deps.Dependency, vendorDir, pathToParentModule str
 			return nil, err
 		}
 
-		for _, d := range nested {
-			if _, ok := deps[d.Name()]; !ok {
-				deps[d.Name()] = d
+		for _, k := range nested.Keys() {
+			d, _ := nested.Get(k)
+			if _, ok := deps.Get(d.Name()); !ok {
+				deps.Set(d.Name(), d)
 			}
 		}
 	}

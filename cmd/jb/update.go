@@ -50,12 +50,12 @@ func updateCommand(dir, jsonnetHome string, uris []string) int {
 			kingpin.Fatalf("Unable to parse package URI `%s`", u)
 		}
 
-		delete(locks, d.Name())
+		locks.Delete(d.Name())
 	}
 
 	// no uris: update all
 	if len(uris) == 0 {
-		locks = make(map[string]deps.Dependency)
+		locks = deps.NewOrdered()
 	}
 
 	newLocks, err := pkg.Ensure(jsonnetFile, filepath.Join(dir, jsonnetHome), locks)

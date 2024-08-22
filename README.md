@@ -104,7 +104,7 @@ Commands:
   help [<command>...]
     Show help.
 
-  init
+  init [<flags>]
     Initialize a new empty jsonnetfile
 
   install [<flags>] [<uris>...]

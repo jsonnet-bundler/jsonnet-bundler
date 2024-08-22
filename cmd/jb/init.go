@@ -25,7 +25,7 @@ import (
 	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 )
 
-func initCommand(dir string) int {
+func initCommand(dir string, legacyImports bool) int {
 	exists, err := jsonnetfile.Exists(jsonnetfile.File)
 	kingpin.FatalIfError(err, "Failed to check for jsonnetfile.json")
 
@@ -35,8 +35,9 @@ func initCommand(dir string) int {
 	}
 
 	s := v1.New()
+
 	// TODO: disable them by default eventually
-	// s.LegacyImports = false
+	s.LegacyImports = legacyImports
 
 	contents, err := json.MarshalIndent(s, "", "  ")
 	kingpin.FatalIfError(err, "formatting jsonnetfile contents as json")

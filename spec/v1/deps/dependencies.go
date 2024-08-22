@@ -16,6 +16,8 @@ package deps
 import (
 	"os"
 	"path/filepath"
+
+	"github.com/elliotchance/orderedmap/v2"
 )
 
 type Dependency struct {
@@ -50,6 +52,12 @@ func (d Dependency) LegacyName() string {
 		return d.LegacyNameCompat
 	}
 	return d.Source.LegacyName()
+}
+
+type Ordered = orderedmap.OrderedMap[string, Dependency]
+
+func NewOrdered() *Ordered {
+	return orderedmap.NewOrderedMap[string, Dependency]()
 }
 
 type Source struct {

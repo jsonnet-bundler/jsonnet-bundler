@@ -72,7 +72,7 @@ func testRewriteWithJsonnetHome(t *testing.T, jsonnetHome string) {
 	err = os.MkdirAll(vendorDir, os.ModePerm)
 	require.Nil(t, err)
 
-	err = Rewrite(dir, jsonnetHome, locks)
+	err = Rewrite(dir, jsonnetHome, locks())
 	require.Nil(t, err)
 
 	content, err := ioutil.ReadFile(name)
@@ -81,8 +81,11 @@ func testRewriteWithJsonnetHome(t *testing.T, jsonnetHome string) {
 	assert.Equal(t, want, string(content))
 }
 
-var locks = map[string]deps.Dependency{
-	"ksonnet":        *deps.Parse("", "github.com/ksonnet/ksonnet"),
-	"ksonnet.beta.4": *deps.Parse("", "github.com/ksonnet/ksonnet-lib/ksonnet.beta.4"),
-	"prometheus":     *deps.Parse("", "github.com/prometheus/prometheus"),
+func locks() *deps.Ordered {
+	ls := deps.NewOrdered()
+	ls.Set("ksonnet", *deps.Parse("", "github.com/ksonnet/ksonnet"))
+	ls.Set("ksonnet.beta.4", *deps.Parse("", "github.com/ksonnet/ksonnet-lib/ksonnet.beta.4"))
+	ls.Set("prometheus", *deps.Parse("", "github.com/prometheus/prometheus"))
+
+	return ls
 }

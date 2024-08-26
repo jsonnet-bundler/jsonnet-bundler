@@ -52,7 +52,20 @@ var GitQuiet = false
 
 func downloadGitHubArchive(filepath string, url string) error {
 	// Get the data
-	resp, err := http.Get(url)
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", url, nil)
+	token_env_vars := []string{"GITHUB_TOKEN", "GH_TOKEN", "GIT_TOKEN"}
+	token := ""
+
+	for i := 0; token == "" && i < len(token_env_vars); i++ {
+		token = os.Getenv(token_env_vars[i])
+	}
+
+	if token != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}

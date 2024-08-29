@@ -88,35 +88,7 @@ the same way, with its dependencies fetched automatically.
 [embedmd]:# (_output/help.txt)
 ```txt
 $ jb -h
-usage: jb [<flags>] <command> [<args> ...]
-
-A jsonnet package manager
-
-Flags:
-  -h, --help     Show context-sensitive help (also try --help-long and
-                 --help-man).
-      --version  Show application version.
-      --jsonnetpkg-home="vendor"  
-                 The directory used to cache packages in.
-  -q, --quiet    Suppress any output from git command.
-
-Commands:
-  help [<command>...]
-    Show help.
-
-  init
-    Initialize a new empty jsonnetfile
-
-  install [<flags>] [<uris>...]
-    Install new dependencies. Existing ones are silently skipped
-
-  update [<uris>...]
-    Update all or specific dependencies.
-
-  rewrite
-    Automatically rewrite legacy imports to absolute ones
-
-
+./scripts/generate-help-txt.sh: line 7: /home/metalmatze/src/github.com/jsonnet-bundler/jsonnet-bundler/_output/jb: No such file or directory
 ```
 
 ## Design

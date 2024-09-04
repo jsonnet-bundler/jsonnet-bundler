@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -237,18 +237,24 @@ func TestParseGit(t *testing.T) {
 			},
 			wantRemote: "https://bitbucket.org/~user/repository.git",
 		},
+		{
+			name: "InvalidURLInLocalPath",
+			uri:  "/home/user/example.com/foo/bar",
+			want: nil,
+		},
 	}
 
 	for _, c := range tests {
 		t.Run(c.name, func(t *testing.T) {
 			got := Parse("", c.uri)
-			require.NotNilf(t, got, "parsed dependency is nil. Most likely, no regex matched the format.")
 
 			assert.Equal(t, c.want, got)
 
-			require.NotNil(t, got.Source)
-			require.NotNil(t, got.Source.GitSource)
-			assert.Equal(t, c.wantRemote, got.Source.GitSource.Remote())
+			if got != nil {
+				require.NotNil(t, got.Source)
+				require.NotNil(t, got.Source.GitSource)
+				assert.Equal(t, c.wantRemote, got.Source.GitSource.Remote())
+			}
 		})
 	}
 }

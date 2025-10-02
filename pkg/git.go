@@ -221,10 +221,25 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 
 				// Move the extracted directory to its final destination
 				if err == nil {
+					subDirPath := path.Join(tmpDir, p.Source.Subdir)
+					_, err := os.Stat(subDirPath)
+					if err != nil {
+						if errors.Is(err, os.ErrNotExist) {
+							revision := version
+							if revision != commitSha {
+								revision = fmt.Sprintf("%s (%s)", version, commitSha)
+							}
+
+							return "", fmt.Errorf("sub directory %q could not be found in repository %q at revision %q, maybe you are not using the correct revision?", p.Source.Subdir, p.Source.Repo, revision)
+						}
+
+						panic(err)
+					}
+
 					if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
 						panic(err)
 					}
-					if err := os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath); err != nil {
+					if err := os.Rename(subDirPath, destPath); err != nil {
 						panic(err)
 					}
 				}

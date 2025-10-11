@@ -16,7 +16,6 @@ package jsonnetfile
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
@@ -36,7 +35,7 @@ var (
 
 // Load reads a jsonnetfile.(lock).json from disk
 func Load(filepath string) (v1.JsonnetFile, error) {
-	bytes, err := ioutil.ReadFile(filepath)
+	bytes, err := os.ReadFile(filepath)
 	if err != nil {
 		return v1.New(), err
 	}

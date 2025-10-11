@@ -13,12 +13,10 @@
 // limitations under the License.
 
 //go:build integration
-// +build integration
 
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,10 +44,10 @@ func (rs RepoState) LockPath(dir string) string {
 
 // Write writes this state to dir
 func (rs RepoState) Write(dir string) error {
-	if err := ioutil.WriteFile(rs.FilePath(dir), []byte(rs.File), 0644); err != nil {
+	if err := os.WriteFile(rs.FilePath(dir), []byte(rs.File), 0644); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(rs.LockPath(dir), []byte(rs.Lock), 0644); err != nil {
+	if err := os.WriteFile(rs.LockPath(dir), []byte(rs.Lock), 0644); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(filepath.Join(dir, "vendor/"), os.ModePerm); err != nil {
@@ -60,11 +58,11 @@ func (rs RepoState) Write(dir string) error {
 
 // Assert checks that dir matches this state
 func (rs RepoState) Assert(t *testing.T, dir string) {
-	file, err := ioutil.ReadFile(rs.FilePath(dir))
+	file, err := os.ReadFile(rs.FilePath(dir))
 	require.NoError(t, err)
 	assert.JSONEq(t, rs.File, string(file))
 
-	lock, err := ioutil.ReadFile(rs.LockPath(dir))
+	lock, err := os.ReadFile(rs.LockPath(dir))
 	require.NoError(t, err)
 	assert.JSONEq(t, rs.Lock, string(lock))
 }
@@ -78,7 +76,7 @@ type UpdateCase struct {
 }
 
 func (u UpdateCase) Run(t *testing.T) {
-	dir, err := ioutil.TempDir("", u.name)
+	dir, err := os.MkdirTemp("", u.name)
 	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 

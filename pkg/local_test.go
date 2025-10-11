@@ -16,7 +16,6 @@ package pkg
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,11 +29,11 @@ func TestLocalInstall(t *testing.T) {
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
 
-	vendorDir, err := ioutil.TempDir(cwd, "vendor")
+	vendorDir, err := os.MkdirTemp(cwd, "vendor")
 	assert.NoError(t, err)
 	defer os.RemoveAll(vendorDir)
 
-	pkgDir, err := ioutil.TempDir(cwd, "foo")
+	pkgDir, err := os.MkdirTemp(cwd, "foo")
 	assert.NoError(t, err)
 	defer os.RemoveAll(pkgDir)
 
@@ -51,7 +50,7 @@ func TestLocalInstallSourceNotFound(t *testing.T) {
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
 
-	vendorDir, err := ioutil.TempDir(cwd, "vendor")
+	vendorDir, err := os.MkdirTemp(cwd, "vendor")
 	assert.NoError(t, err)
 	defer os.RemoveAll(vendorDir)
 
@@ -66,7 +65,7 @@ func TestLocalInstallTargetDoesNotExist(t *testing.T) {
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
 
-	pkgDir, err := ioutil.TempDir(cwd, "foo")
+	pkgDir, err := os.MkdirTemp(cwd, "foo")
 	assert.NoError(t, err)
 	defer os.RemoveAll(pkgDir)
 

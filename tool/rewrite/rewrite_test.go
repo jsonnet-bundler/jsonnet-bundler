@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +14,6 @@
 package rewrite
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -60,12 +59,12 @@ func TestRewriteDeepCustomJsonnetHome(t *testing.T) {
 }
 
 func testRewriteWithJsonnetHome(t *testing.T, jsonnetHome string) {
-	dir, err := ioutil.TempDir("", "jbrewrite")
+	dir, err := os.MkdirTemp("", "jbrewrite")
 	require.Nil(t, err)
 	defer os.RemoveAll(dir)
 
 	name := filepath.Join(dir, "test.jsonnet")
-	err = ioutil.WriteFile(name, []byte(sample), 0644)
+	err = os.WriteFile(name, []byte(sample), 0644)
 	require.Nil(t, err)
 
 	vendorDir := filepath.Join(dir, jsonnetHome)
@@ -75,7 +74,7 @@ func testRewriteWithJsonnetHome(t *testing.T, jsonnetHome string) {
 	err = Rewrite(dir, jsonnetHome, locks())
 	require.Nil(t, err)
 
-	content, err := ioutil.ReadFile(name)
+	content, err := os.ReadFile(name)
 	require.Nil(t, err)
 
 	assert.Equal(t, want, string(content))

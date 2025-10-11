@@ -13,12 +13,10 @@
 // limitations under the License.
 
 //go:build integration
-// +build integration
 
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -26,7 +24,7 @@ import (
 )
 
 func TestInitCommand(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "jb-init")
+	tempDir, err := os.MkdirTemp("", "jb-init")
 	if err != nil {
 		t.Fatal(err)
 	}

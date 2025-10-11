@@ -15,7 +15,6 @@
 package jsonnetfile_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -194,14 +193,14 @@ func TestVersions(t *testing.T) {
 }
 
 func TestLoadV1(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "jb-load-jsonnetfile")
+	tempDir, err := os.MkdirTemp("", "jb-load-jsonnetfile")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(tempDir)
 
 	tempFile := filepath.Join(tempDir, jsonnetfile.File)
-	err = ioutil.WriteFile(tempFile, []byte(v1JSON), os.ModePerm)
+	err = os.WriteFile(tempFile, []byte(v1JSON), os.ModePerm)
 	assert.Nil(t, err)
 
 	jf, err := jsonnetfile.Load(tempFile)
@@ -210,7 +209,7 @@ func TestLoadV1(t *testing.T) {
 }
 
 func TestLoadEmpty(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "jb-load-empty")
+	tempDir, err := os.MkdirTemp("", "jb-load-empty")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +217,7 @@ func TestLoadEmpty(t *testing.T) {
 
 	// write empty json file
 	tempFile := filepath.Join(tempDir, jsonnetfile.File)
-	err = ioutil.WriteFile(tempFile, []byte(`{}`), os.ModePerm)
+	err = os.WriteFile(tempFile, []byte(`{}`), os.ModePerm)
 	assert.Nil(t, err)
 
 	// expect it to be loaded properly
@@ -240,7 +239,7 @@ func TestFileExists(t *testing.T) {
 		assert.Nil(t, err)
 	}
 	{
-		tempFile, err := ioutil.TempFile("", "jb-exists")
+		tempFile, err := os.CreateTemp("", "jb-exists")
 		if err != nil {
 			t.Fatal(err)
 		}

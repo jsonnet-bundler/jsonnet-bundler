@@ -57,7 +57,10 @@ func Main() int {
 	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
 
 	installCmd := a.Command(installActionName, "Install new dependencies. Existing ones are silently skipped")
-	installCmdURIs := installCmd.Arg("uris", "URIs to packages to install, URLs or file paths").Strings()
+	installCmdURIs := installCmd.Arg("uris", "URIs to packages to install, URLs, or file paths."+
+		" The subpath can be assigned by `/subpath`."+
+		" The version can be assigned by `@ref`."+
+		" e.g. https://github.com/jsonnet-libs/k8s-libsonnet/1.30@main").Strings()
 	installCmdSingle := installCmd.Flag("single", "install package without dependencies").Short('1').Bool()
 	installCmdLegacyName := installCmd.Flag("legacy-name", "set legacy name").String()
 

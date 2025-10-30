@@ -63,6 +63,22 @@ func TestParseDependency(t *testing.T) {
 			},
 		},
 		{
+			name: "AzureGitHTTPS",
+			path: "dev.azure.com/microsoft/engineering/_git/libraries/my-libsonnet@v1.0.0",
+			want: &deps.Dependency{
+				Source: deps.Source{
+					GitSource: &deps.Git{
+						Scheme: deps.GitSchemeHTTPSAzureDevops,
+						Host:   "dev.azure.com",
+						User:   "microsoft/engineering/_git",
+						Repo:   "libraries",
+						Subdir: "/my-libsonnet",
+					},
+				},
+				Version: "v1.0.0",
+			},
+		},
+		{
 			name: "SSH",
 			path: "git+ssh://git@github.com/jsonnet-bundler/jsonnet-bundler.git",
 			want: &deps.Dependency{

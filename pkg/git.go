@@ -114,12 +114,6 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 		// reconstruct the target parh for the archive entry
 		target := filepath.Join(prefix, suffix)
 
-		// if subdir is provided and target is not under it, skip it
-		subDirPath := filepath.Join(prefix, subDir)
-		if subDir != "" && !strings.HasPrefix(target, subDirPath) {
-			continue
-		}
-
 		// check the file type
 		switch header.Typeflag {
 
@@ -219,12 +213,42 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 				// If none specified, the entire archive is unpacked
 				err = gzipUntar(tmpDir, ar, p.Source.Subdir)
 
+				// Find the actual extracted directory or subdirectory to move
+				var srcPath string
+				if p.Source.Subdir != "" {
+					subdir := strings.TrimPrefix(p.Source.Subdir, "/")
+					files, _ := ioutil.ReadDir(tmpDir)
+					found := false
+					for _, f := range files {
+						if f.IsDir() {
+							candidate := path.Join(tmpDir, f.Name(), subdir)
+							if stat, err := os.Stat(candidate); err == nil && stat.IsDir() {
+								srcPath = candidate
+								found = true
+								break
+							}
+						}
+					}
+					if !found {
+						candidate := path.Join(tmpDir, subdir)
+						if stat, err := os.Stat(candidate); err == nil && stat.IsDir() {
+							srcPath = candidate
+							found = true
+						}
+					}
+					if !found {
+						srcPath = path.Join(tmpDir, subdir)
+					}
+				} else {
+					srcPath = tmpDir
+				}
+
 				// Move the extracted directory to its final destination
 				if err == nil {
 					if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
 						panic(err)
 					}
-					if err := os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath); err != nil {
+					if err := os.Rename(srcPath, destPath); err != nil {
 						panic(err)
 					}
 				}

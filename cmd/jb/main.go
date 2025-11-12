@@ -55,6 +55,7 @@ func Main() int {
 		Short('q').BoolVar(&pkg.GitQuiet)
 
 	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
+	initCmdLegacyImports := initCmd.Flag("legacy-imports", "use legacy imports").Default("true").Bool()
 
 	installCmd := a.Command(installActionName, "Install new dependencies. Existing ones are silently skipped")
 	installCmdURIs := installCmd.Arg("uris", "URIs to packages to install, URLs or file paths").Strings()
@@ -82,7 +83,7 @@ func Main() int {
 
 	switch command {
 	case initCmd.FullCommand():
-		return initCommand(workdir)
+		return initCommand(workdir, *initCmdLegacyImports)
 	case installCmd.FullCommand():
 		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs, *installCmdSingle, *installCmdLegacyName)
 	case updateCmd.FullCommand():

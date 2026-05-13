@@ -15,9 +15,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -53,6 +56,8 @@ func Main() int {
 		Default("vendor").StringVar(&cfg.JsonnetHome)
 	a.Flag("quiet", "Suppress any output from git command.").
 		Short('q').BoolVar(&pkg.GitQuiet)
+	a.Flag("jobs", "Maximum number of parallel dependency downloads.").
+		Short('j').Default("10").IntVar(&pkg.Jobs)
 
 	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
 
@@ -80,17 +85,20 @@ func Main() int {
 
 	cfg.JsonnetHome = filepath.Clean(cfg.JsonnetHome)
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	switch command {
 	case initCmd.FullCommand():
 		return initCommand(workdir)
 	case installCmd.FullCommand():
-		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs, *installCmdSingle, *installCmdLegacyName)
+		return installCommand(ctx, workdir, cfg.JsonnetHome, *installCmdURIs, *installCmdSingle, *installCmdLegacyName)
 	case updateCmd.FullCommand():
-		return updateCommand(workdir, cfg.JsonnetHome, *updateCmdURIs)
+		return updateCommand(ctx, workdir, cfg.JsonnetHome, *updateCmdURIs)
 	case rewriteCmd.FullCommand():
 		return rewriteCommand(workdir, cfg.JsonnetHome)
 	default:
-		installCommand(workdir, cfg.JsonnetHome, []string{}, false, "")
+		installCommand(ctx, workdir, cfg.JsonnetHome, []string{}, false, "")
 	}
 
 	return 0

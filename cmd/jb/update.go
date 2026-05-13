@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -26,7 +27,7 @@ import (
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
-func updateCommand(dir, jsonnetHome string, uris []string) int {
+func updateCommand(ctx context.Context, dir, jsonnetHome string, uris []string) int {
 	if dir == "" {
 		dir = "."
 	}
@@ -58,7 +59,7 @@ func updateCommand(dir, jsonnetHome string, uris []string) int {
 		locks = deps.NewOrdered()
 	}
 
-	newLocks, err := pkg.Ensure(jsonnetFile, filepath.Join(dir, jsonnetHome), locks)
+	newLocks, err := pkg.EnsureContext(ctx, jsonnetFile, filepath.Join(dir, jsonnetHome), locks)
 	kingpin.FatalIfError(err, "updating")
 
 	kingpin.FatalIfError(

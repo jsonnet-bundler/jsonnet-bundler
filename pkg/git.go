@@ -50,35 +50,24 @@ func NewGitPackage(source *deps.Git) Interface {
 
 var GitQuiet = false
 
-func downloadGitHubArchive(filepath string, url string) error {
-	// Get the data
-	resp, err := http.Get(url)
+func downloadGitHubArchive(ctx context.Context, url string) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
 	}
 	if !GitQuiet {
 		color.Cyan("GET %s %d", url, resp.StatusCode)
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		resp.Body.Close()
+		return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
 	}
 
-	defer resp.Body.Close()
-
-	// Create the file
-	out, err := os.Create(filepath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return resp.Body, nil
 }
 
 func gzipUntar(dst string, r io.Reader, subDir string) error {
@@ -206,33 +195,33 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		}
 
 		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", strings.TrimSuffix(p.Source.Remote(), ".git"), commitSha)
-		archiveFilepath := fmt.Sprintf("%s.tar.gz", tmpDir)
 
-		defer os.Remove(archiveFilepath)
-		err = downloadGitHubArchive(archiveFilepath, archiveUrl)
+		var ar io.ReadCloser
+		ar, err = downloadGitHubArchive(ctx, archiveUrl)
 		if err == nil {
-			var ar *os.File
-			ar, err = os.Open(archiveFilepath)
-			defer ar.Close()
-			if err == nil {
-				// Extract the sub-directory (if any) from the archive
-				// If none specified, the entire archive is unpacked
-				err = gzipUntar(tmpDir, ar, p.Source.Subdir)
+			// Extract the sub-directory (if any) from the archive.
+			// If none specified, the entire archive is unpacked.
+			err = gzipUntar(tmpDir, ar, p.Source.Subdir)
+			if closeErr := ar.Close(); err == nil {
+				err = closeErr
+			}
 
-				// Move the extracted directory to its final destination
-				if err == nil {
-					if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
-						panic(err)
-					}
-					if err := os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath); err != nil {
-						panic(err)
-					}
+			// Move the extracted directory to its final destination.
+			if err == nil {
+				if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
+					panic(err)
+				}
+				if err := os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath); err != nil {
+					panic(err)
 				}
 			}
 		}
 
 		if err == nil {
 			return commitSha, nil
+		}
+		if ctx.Err() != nil {
+			return "", ctx.Err()
 		}
 
 		// The repository may be private or the archive download may not work

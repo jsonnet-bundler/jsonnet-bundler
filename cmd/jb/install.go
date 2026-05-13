@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -31,7 +32,7 @@ import (
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
-func installCommand(dir, jsonnetHome string, uris []string, single bool, legacyName string) int {
+func installCommand(ctx context.Context, dir, jsonnetHome string, uris []string, single bool, legacyName string) int {
 	if dir == "" {
 		dir = "."
 	}
@@ -83,7 +84,7 @@ func installCommand(dir, jsonnetHome string, uris []string, single bool, legacyN
 	}
 
 	jsonnetPkgHomeDir := filepath.Join(dir, jsonnetHome)
-	locked, err := pkg.Ensure(jsonnetFile, jsonnetPkgHomeDir, lockFile.Dependencies)
+	locked, err := pkg.EnsureContext(ctx, jsonnetFile, jsonnetPkgHomeDir, lockFile.Dependencies)
 	kingpin.FatalIfError(err, "failed to install packages")
 
 	pkg.CleanLegacyName(jsonnetFile.Dependencies)

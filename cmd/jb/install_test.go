@@ -18,6 +18,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -105,7 +106,7 @@ func testInstallCommandWithJsonnetHome(t *testing.T, jsonnetHome string) {
 			jsonnetFileContent(t, jsonnetfile.File, []byte(initContents))
 
 			// install something, check it writes only if required, etc.
-			installCommand("", jsonnetHome, tc.URIs, tc.single, "")
+			installCommand(context.Background(), "", jsonnetHome, tc.URIs, tc.single, "")
 			jsonnetFileContent(t, jsonnetfile.File, tc.ExpectedJsonnetFile)
 			if tc.ExpectedJsonnetLockFile != nil {
 				jsonnetFileContent(t, jsonnetfile.LockFile, tc.ExpectedJsonnetLockFile)
@@ -226,7 +227,7 @@ func TestInstallTransitive(t *testing.T) {
 		subDirB: jsonnetFileWithFrozenLib(frozenLibSecondCommit, ""),
 	})
 
-	require.Equal(t, 0, installCommand(baseDir, "vendor", nil, false, ""))
+	require.Equal(t, 0, installCommand(context.Background(), baseDir, "vendor", nil, false, ""))
 
 	lockCheckFrozenLibVersion(t, filepath.Join(baseDir, "jsonnetfile.lock.json"), frozenLibFirstCommit)
 	require.NoError(t, os.RemoveAll(filepath.Join(baseDir, "jsonnetfile.lock.json")))
@@ -237,7 +238,7 @@ func TestInstallTransitive(t *testing.T) {
 		subDirB: jsonnetFileWithFrozenLib(frozenLibFirstCommit, ""),
 	})
 
-	require.Equal(t, 0, installCommand(baseDir, "vendor", nil, false, ""))
+	require.Equal(t, 0, installCommand(context.Background(), baseDir, "vendor", nil, false, ""))
 
 	lockCheckFrozenLibVersion(t, filepath.Join(baseDir, "jsonnetfile.lock.json"), frozenLibSecondCommit)
 }

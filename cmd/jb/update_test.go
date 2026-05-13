@@ -18,6 +18,7 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -89,7 +90,7 @@ func (u UpdateCase) Run(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	ret := updateCommand(dir, "vendor", u.uris)
+	ret := updateCommand(context.Background(), dir, "vendor", u.uris)
 	assert.Equal(t, ret, 0)
 
 	if u.after != nil {

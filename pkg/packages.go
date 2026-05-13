@@ -23,6 +23,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -35,6 +37,18 @@ import (
 var (
 	VersionMismatch = errors.New("multiple colliding versions specified")
 )
+
+// Jobs controls the maximum number of dependencies downloaded in parallel
+// at each level of the dependency tree. Values < 1 are treated as 1.
+var Jobs = 10
+
+// downloadAttempts is the total number of attempts (1 + retries) for a
+// single git-source download. Local sources are not retried.
+const downloadAttempts = 3
+
+// downloadInitialBackoff is the wait before the second attempt; each
+// subsequent retry doubles the wait. It is a var so tests can shorten it.
+var downloadInitialBackoff = time.Second
 
 // Ensure receives all direct packages, the directory to vendor into and all known locks.
 // It then makes sure all direct and nested dependencies are present in vendor at the correct version:
@@ -50,9 +64,17 @@ var (
 // Finally, all unknown files and directories are removed from vendor/
 // The full list of locked depedencies is returned
 func Ensure(direct v1.JsonnetFile, vendorDir string, oldLocks *deps.Ordered) (*deps.Ordered, error) {
+	return EnsureContext(context.Background(), direct, vendorDir, oldLocks)
+}
+
+// EnsureContext is the cancellation-aware variant of Ensure. When ctx is
+// cancelled, in-flight downloads are interrupted (the underlying git
+// processes and HTTP requests are torn down) and the function returns
+// promptly with the cancellation error.
+func EnsureContext(ctx context.Context, direct v1.JsonnetFile, vendorDir string, oldLocks *deps.Ordered) (*deps.Ordered, error) {
 	// ensure all required files are in vendor
 	// This is the actual installation
-	locks, err := ensure(direct.Dependencies, vendorDir, "", oldLocks)
+	locks, err := ensure(ctx, direct.Dependencies, vendorDir, "", oldLocks)
 	if err != nil {
 		return nil, err
 	}
@@ -214,42 +236,118 @@ func known(deps *deps.Ordered, p string) bool {
 	return false
 }
 
-func ensure(direct *deps.Ordered, vendorDir, pathToParentModule string, locks *deps.Ordered) (*deps.Ordered, error) {
-	deps := deps.NewOrdered()
+func ensure(ctx context.Context, direct *deps.Ordered, vendorDir, pathToParentModule string, locks *deps.Ordered) (*deps.Ordered, error) {
+	out := deps.NewOrdered()
 
-	for _, k := range direct.Keys() {
+	type job struct {
+		idx         int
+		dep         deps.Dependency
+		expectedSum string
+	}
+
+	keys := direct.Keys()
+	results := make([]*deps.Dependency, len(keys))
+	var jobs []job
+
+	// Resolve the locked-and-intact entries up front; queue the rest for
+	// parallel download.
+	for i, k := range keys {
 		d, _ := direct.Get(k)
 		l, present := locks.Get(d.Name())
 
-		// already locked and the integrity is intact
 		if present {
 			d.Version = l.Version
 
 			if check(l, vendorDir) {
-				deps.Set(d.Name(), l)
+				locked := l
+				results[i] = &locked
 				continue
 			}
 		}
 		expectedSum := l.Sum
 
-		// either not present or not intact: download again
 		dir := filepath.Join(vendorDir, d.Name())
 		os.RemoveAll(dir)
 
-		locked, err := download(d, vendorDir, pathToParentModule)
-		if err != nil {
-			return nil, errors.Wrap(err, "downloading")
-		}
-		if expectedSum != "" && locked.Sum != expectedSum {
-			return nil, fmt.Errorf("checksum mismatch for %s. Expected %s but got %s", d.Name(), expectedSum, locked.Sum)
-		}
-		deps.Set(d.Name(), *locked)
-		// we settled on a new version, add it to the locks for recursion
-		locks.Set(d.Name(), *locked)
+		jobs = append(jobs, job{idx: i, dep: d, expectedSum: expectedSum})
 	}
 
-	for _, k := range deps.Keys() {
-		d, _ := deps.Get(k)
+	if len(jobs) > 0 {
+		maxJobs := Jobs
+		if maxJobs < 1 {
+			maxJobs = 1
+		}
+		if maxJobs > len(jobs) {
+			maxJobs = len(jobs)
+		}
+
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		var wg sync.WaitGroup
+		var locksMu sync.Mutex
+		errCh := make(chan error, 1)
+		setErr := func(err error) {
+			select {
+			case errCh <- err:
+				cancel()
+			default:
+			}
+		}
+
+		jobCh := make(chan job, len(jobs))
+		for _, j := range jobs {
+			jobCh <- j
+		}
+		close(jobCh)
+
+		for i := 0; i < maxJobs; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				for j := range jobCh {
+					if err := ctx.Err(); err != nil {
+						setErr(err)
+						return
+					}
+
+					locked, err := download(ctx, j.dep, vendorDir, pathToParentModule)
+					if err != nil {
+						setErr(errors.Wrap(err, "downloading"))
+						return
+					}
+					if j.expectedSum != "" && locked.Sum != j.expectedSum {
+						setErr(fmt.Errorf("checksum mismatch for %s. Expected %s but got %s", j.dep.Name(), j.expectedSum, locked.Sum))
+						return
+					}
+
+					locksMu.Lock()
+					locks.Set(j.dep.Name(), *locked)
+					locksMu.Unlock()
+
+					results[j.idx] = locked
+				}
+			}()
+		}
+		wg.Wait()
+		select {
+		case err := <-errCh:
+			return nil, err
+		default:
+		}
+	}
+
+	// Preserve input dependency order.
+	for _, dep := range results {
+		if dep == nil {
+			continue
+		}
+		out.Set(dep.Name(), *dep)
+	}
+
+	for _, k := range out.Keys() {
+		d, _ := out.Get(k)
 		if d.Single {
 			// skip dependencies that explicitely don't want nested ones installed
 			continue
@@ -268,29 +366,32 @@ func ensure(direct *deps.Ordered, vendorDir, pathToParentModule string, locks *d
 			return nil, err
 		}
 
-		nested, err := ensure(f.Dependencies, vendorDir, absolutePath, locks)
+		nested, err := ensure(ctx, f.Dependencies, vendorDir, absolutePath, locks)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, k := range nested.Keys() {
 			d, _ := nested.Get(k)
-			if _, ok := deps.Get(d.Name()); !ok {
-				deps.Set(d.Name(), d)
+			if _, ok := out.Get(d.Name()); !ok {
+				out.Set(d.Name(), d)
 			}
 		}
 	}
 
-	return deps, nil
+	return out, nil
 }
 
 // download retrieves a package from a remote upstream. The checksum of the
-// files is generated afterwards.
-func download(d deps.Dependency, vendorDir, pathToParentModule string) (*deps.Dependency, error) {
+// files is generated afterwards. ctx is forwarded to git and HTTP calls so
+// the caller can cancel work in flight.
+func download(ctx context.Context, d deps.Dependency, vendorDir, pathToParentModule string) (*deps.Dependency, error) {
 	var p Interface
+	isGit := false
 	switch {
 	case d.Source.GitSource != nil:
 		p = NewGitPackage(d.Source.GitSource)
+		isGit = true
 	case d.Source.LocalSource != nil:
 		wd, err := os.Getwd()
 		if err != nil {
@@ -313,7 +414,13 @@ func download(d deps.Dependency, vendorDir, pathToParentModule string) (*deps.De
 		return nil, errors.New("either git or local source is required")
 	}
 
-	version, err := p.Install(context.TODO(), d.Name(), vendorDir, d.Version)
+	var version string
+	var err error
+	if isGit {
+		version, err = installWithRetry(ctx, p, d.Name(), vendorDir, d.Version)
+	} else {
+		version, err = p.Install(ctx, d.Name(), vendorDir, d.Version)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -326,6 +433,35 @@ func download(d deps.Dependency, vendorDir, pathToParentModule string) (*deps.De
 	d.Version = version
 	d.Sum = sum
 	return &d, nil
+}
+
+// installWithRetry calls p.Install up to downloadAttempts times, waiting
+// with exponential backoff between attempts. It returns immediately on
+// success or when ctx is cancelled.
+func installWithRetry(ctx context.Context, p Interface, name, vendorDir, version string) (string, error) {
+	var lastErr error
+	backoff := downloadInitialBackoff
+	for attempt := 1; attempt <= downloadAttempts; attempt++ {
+		v, err := p.Install(ctx, name, vendorDir, version)
+		if err == nil {
+			return v, nil
+		}
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
+		lastErr = err
+		if attempt == downloadAttempts {
+			break
+		}
+		color.Yellow("retry %d/%d for %s after %s: %v", attempt, downloadAttempts-1, name, backoff, err)
+		select {
+		case <-time.After(backoff):
+		case <-ctx.Done():
+			return "", ctx.Err()
+		}
+		backoff *= 2
+	}
+	return "", lastErr
 }
 
 // check returns whether the files present at the vendor/ folder match the

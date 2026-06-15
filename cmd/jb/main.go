@@ -53,6 +53,8 @@ func Main() int {
 		Default("vendor").StringVar(&cfg.JsonnetHome)
 	a.Flag("quiet", "Suppress any output from git command.").
 		Short('q').BoolVar(&pkg.GitQuiet)
+	a.Flag("plain-http", "Use plain HTTP instead of HTTPS for oci:// registries (for local or insecure registries).").
+		BoolVar(&pkg.OCIPlainHTTP)
 
 	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
 

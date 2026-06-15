@@ -36,6 +36,10 @@ func Parse(dir, uri string) *Dependency {
 		return nil
 	}
 
+	if d := parseOCI(uri); d != nil {
+		return d
+	}
+
 	if d := parseGit(uri); d != nil {
 		return d
 	}
@@ -63,12 +67,15 @@ func NewOrdered() *Ordered {
 type Source struct {
 	GitSource   *Git   `json:"git,omitempty"`
 	LocalSource *Local `json:"local,omitempty"`
+	OCISource   *OCI   `json:"oci,omitempty"`
 }
 
 func (s Source) Name() string {
 	switch {
 	case s.GitSource != nil:
 		return s.GitSource.Name()
+	case s.OCISource != nil:
+		return s.OCISource.Name()
 	case s.LocalSource != nil:
 		return s.LegacyName()
 	default:
@@ -80,6 +87,8 @@ func (s Source) LegacyName() string {
 	switch {
 	case s.GitSource != nil:
 		return s.GitSource.LegacyName()
+	case s.OCISource != nil:
+		return s.OCISource.LegacyName()
 	case s.LocalSource != nil:
 		p, err := filepath.Abs(s.LocalSource.Directory)
 		if err != nil {

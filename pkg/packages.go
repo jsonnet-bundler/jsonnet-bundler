@@ -291,6 +291,8 @@ func download(d deps.Dependency, vendorDir, pathToParentModule string) (*deps.De
 	switch {
 	case d.Source.GitSource != nil:
 		p = NewGitPackage(d.Source.GitSource)
+	case d.Source.OCISource != nil:
+		p = NewOCIPackage(d.Source.OCISource)
 	case d.Source.LocalSource != nil:
 		wd, err := os.Getwd()
 		if err != nil {
@@ -310,7 +312,7 @@ func download(d deps.Dependency, vendorDir, pathToParentModule string) (*deps.De
 	}
 
 	if p == nil {
-		return nil, errors.New("either git or local source is required")
+		return nil, errors.New("either git, oci or local source is required")
 	}
 
 	version, err := p.Install(context.TODO(), d.Name(), vendorDir, d.Version)

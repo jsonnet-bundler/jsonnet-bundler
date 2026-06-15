@@ -22,6 +22,13 @@ github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.14
 ## explicit; go 1.12
 github.com/mattn/go-isatty
+# github.com/opencontainers/go-digest v1.0.0
+## explicit; go 1.13
+github.com/opencontainers/go-digest
+# github.com/opencontainers/image-spec v1.1.1
+## explicit; go 1.18
+github.com/opencontainers/image-spec/specs-go
+github.com/opencontainers/image-spec/specs-go/v1
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
@@ -34,6 +41,10 @@ github.com/pmezard/go-difflib/difflib
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
+# golang.org/x/sync v0.6.0
+## explicit; go 1.18
+golang.org/x/sync/errgroup
+golang.org/x/sync/semaphore
 # golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c
 ## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
@@ -46,3 +57,36 @@ gopkg.in/alecthomas/kingpin.v2
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
+# oras.land/oras-go/v2 v2.5.0
+## explicit; go 1.21
+oras.land/oras-go/v2
+oras.land/oras-go/v2/content
+oras.land/oras-go/v2/content/file
+oras.land/oras-go/v2/errdef
+oras.land/oras-go/v2/internal/cas
+oras.land/oras-go/v2/internal/container/set
+oras.land/oras-go/v2/internal/copyutil
+oras.land/oras-go/v2/internal/descriptor
+oras.land/oras-go/v2/internal/docker
+oras.land/oras-go/v2/internal/graph
+oras.land/oras-go/v2/internal/httputil
+oras.land/oras-go/v2/internal/interfaces
+oras.land/oras-go/v2/internal/ioutil
+oras.land/oras-go/v2/internal/manifestutil
+oras.land/oras-go/v2/internal/platform
+oras.land/oras-go/v2/internal/registryutil
+oras.land/oras-go/v2/internal/resolver
+oras.land/oras-go/v2/internal/spec
+oras.land/oras-go/v2/internal/status
+oras.land/oras-go/v2/internal/syncutil
+oras.land/oras-go/v2/registry
+oras.land/oras-go/v2/registry/remote
+oras.land/oras-go/v2/registry/remote/auth
+oras.land/oras-go/v2/registry/remote/credentials
+oras.land/oras-go/v2/registry/remote/credentials/internal/config
+oras.land/oras-go/v2/registry/remote/credentials/internal/executer
+oras.land/oras-go/v2/registry/remote/credentials/internal/ioutil
+oras.land/oras-go/v2/registry/remote/credentials/trace
+oras.land/oras-go/v2/registry/remote/errcode
+oras.land/oras-go/v2/registry/remote/internal/errutil
+oras.land/oras-go/v2/registry/remote/retry

@@ -79,6 +79,32 @@ remove the `tree/master` from the path.*
 If pushed to Github, your project can now be referenced from other packages in
 the same way, with its dependencies fetched automatically.
 
+To depend on a package published as an OCI artifact, use an `oci://` URI. The
+tag (or digest) after the reference selects the version; when omitted, `latest`
+is used:
+
+```sh
+jb install oci://ghcr.io/myorg/mylib:v1.0.0
+```
+
+The artifact is expected to be packaged with `oras` (each file stored as a blob
+named via its `org.opencontainers.image.title` annotation), for example:
+
+```sh
+oras push ghcr.io/myorg/mylib:v1.0.0 main.libsonnet util.libsonnet
+```
+
+Files are vendored under the registry path
+(`vendor/ghcr.io/myorg/mylib/...`) and the lockfile pins the resolved manifest
+digest. Registry credentials are resolved from the Docker config the same way
+`oras pull` does, falling back to anonymous pulls.
+
+For a local or insecure registry served over plain HTTP, pass `--plain-http`:
+
+```sh
+jb --plain-http install oci://localhost:5000/mylib:v1.0.0
+```
+
 
 ## All command line flags
 
@@ -90,12 +116,14 @@ usage: jb [<flags>] <command> [<args> ...]
 A jsonnet package manager
 
 Flags:
-  -h, --help     Show context-sensitive help (also try --help-long and
-                 --help-man).
-      --version  Show application version.
+  -h, --help        Show context-sensitive help (also try --help-long and
+                    --help-man).
+      --version     Show application version.
       --jsonnetpkg-home="vendor"  
-                 The directory used to cache packages in.
-  -q, --quiet    Suppress any output from git command.
+                    The directory used to cache packages in.
+  -q, --quiet       Suppress any output from git command.
+      --plain-http  Use plain HTTP instead of HTTPS for oci:// registries (for
+                    local or insecure registries).
 
 Commands:
   help [<command>...]
